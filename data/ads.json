@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "🎉 Grand Opening Special!",
+    "content": "Get 10% off on orders above RM30! Valid today only.",
+    "type": "promotion",
+    "startDate": "2025-10-01",
+    "endDate": "2025-10-31",
+    "active": true
+  },
+  {
+    "id": 2,
+    "title": "📢 New Stall Alert",
+    "content": "Western Grill now open! Try our signature burgers.",
+    "type": "announcement",
+    "startDate": "2025-10-15",
+    "endDate": "2025-11-15",
+    "active": true
+  }
+]

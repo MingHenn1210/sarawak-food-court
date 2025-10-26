@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Tracking - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="home.html" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Order Tracking</h1>
+            <div></div>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <!-- Current Order (if exists) -->
+        <div id="currentOrderSection" style="display: none;">
+            <div class="order-header">
+                <h2>Current Order</h2>
+                <span class="order-number" id="currentOrderId">-</span>
+            </div>
+            
+            <!-- Order Status Timeline -->
+            <div class="order-timeline" id="orderTimeline">
+                <div class="timeline-item" data-status="pending">
+                    <div class="timeline-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>Order Received</h4>
+                        <p>Your order has been placed</p>
+                    </div>
+                </div>
+                <div class="timeline-item" data-status="preparing">
+                    <div class="timeline-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>Preparing</h4>
+                        <p>Stall is preparing your food</p>
+                    </div>
+                </div>
+                <div class="timeline-item" data-status="ready">
+                    <div class="timeline-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>Ready for Pickup</h4>
+                        <p>Your order is ready!</p>
+                    </div>
+                </div>
+                <div class="timeline-item" data-status="completed">
+                    <div class="timeline-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>Completed</h4>
+                        <p>Enjoy your meal!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress by Stall -->
+            <div class="stall-progress-section">
+                <h3>Progress by Stall</h3>
+                <div id="stallProgress">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- Order Details -->
+            <div class="order-details-card">
+                <h3>Order Details</h3>
+                <div class="order-info">
+                    <div class="info-row">
+                        <span><i class="fas fa-chair"></i> Table</span>
+                        <strong id="orderTable">-</strong>
+                    </div>
+                    <div class="info-row">
+                        <span><i class="fas fa-clock"></i> Order Time</span>
+                        <strong id="orderTime">-</strong>
+                    </div>
+                </div>
+                <div class="order-items" id="orderItems">
+                    <!-- Will be populated dynamically -->
+                </div>
+                <div class="order-total">
+                    <span>Total Paid</span>
+                    <strong id="orderTotal">RM 0.00</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order History -->
+        <div class="order-history-section">
+            <h2>Order History</h2>
+            <div id="orderHistory">
+                <div class="empty-state">
+                    <i class="fas fa-receipt"></i>
+                    <p>No previous orders</p>
+                    <a href="home.html" class="btn-primary">
+                        <i class="fas fa-utensils"></i> Start Ordering
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="cart.html" class="nav-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Cart</span>
+        </a>
+        <a href="order-tracking.html" class="nav-item active">
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script>
+        let currentOrder = null;
+        let orderUpdateInterval = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrders();
+            
+            // Start real-time updates (simulate)
+            startOrderUpdates();
+        });
+        
+        function loadOrders() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order');
+            
+            // Load current order
+            if (orderId) {
+                const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                currentOrder = orders.find(o => o.orderId === orderId);
+            } else {
+                currentOrder = JSON.parse(localStorage.getItem('currentOrder') || 'null');
+            }
+            
+            if (currentOrder) {
+                displayCurrentOrder();
+            }
+            
+            // Load order history
+            displayOrderHistory();
+        }
+        
+        function displayCurrentOrder() {
+            document.getElementById('currentOrderSection').style.display = 'block';
+            document.getElementById('currentOrderId').textContent = currentOrder.orderId;
+            document.getElementById('orderTable').textContent = currentOrder.tableNumber;
+            document.getElementById('orderTime').textContent = formatTime(currentOrder.timestamp);
+            document.getElementById('orderTotal').textContent = `RM ${currentOrder.total.toFixed(2)}`;
+            
+            // Update timeline
+            updateTimeline(currentOrder.status);
+            
+            // Display stall progress
+            displayStallProgress();
+            
+            // Display order items
+            displayOrderItems();
+        }
+        
+        function updateTimeline(status) {
+            const statuses = ['pending', 'preparing', 'ready', 'completed'];
+            const currentIndex = statuses.indexOf(status);
+            
+            document.querySelectorAll('.timeline-item').forEach((item, index) => {
+                if (index <= currentIndex) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+                
+                if (index === currentIndex) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+        
+        function displayStallProgress() {
+            const container = document.getElementById('stallProgress');
+            
+            // Initialize stall statuses if not exists
+            if (!currentOrder.stallStatuses) {
+                currentOrder.stallStatuses = {};
+                currentOrder.stallOrders.forEach(stall => {
+                    currentOrder.stallStatuses[stall.stallName] = 'pending';
+                });
+            }
+            
+            container.innerHTML = currentOrder.stallOrders.map(stall => {
+                const status = currentOrder.stallStatuses[stall.stallName] || 'pending';
+                return `
+                    <div class="stall-progress-card ${status}">
+                        <div class="stall-progress-header">
+                            <h4><i class="fas fa-store"></i> ${stall.stallName}</h4>
+                            <span class="status-badge status-${status}">
+                                ${getStatusIcon(status)} ${formatStatus(status)}
+                            </span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${getProgressWidth(status)}%"></div>
+                        </div>
+                        <p class="progress-time">${getEstimatedTime(status)}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function displayOrderItems() {
+            const container = document.getElementById('orderItems');
+            
+            container.innerHTML = currentOrder.stallOrders.map(stall => `
+                <div class="order-stall-group">
+                    <h4><i class="fas fa-store"></i> ${stall.stallName}</h4>
+                    ${stall.items.map(item => `
+                        <div class="order-item">
+                            <div class="item-info">
+                                <span class="item-name">${item.name} × ${item.quantity}</span>
+                                ${item.specialInstructions ? 
+                                    `<span class="item-note">${item.specialInstructions}</span>` 
+                                    : ''}
+                            </div>
+                            <span class="item-price">RM ${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+        
+        function displayOrderHistory() {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const container = document.getElementById('orderHistory');
+            
+            // Filter out current order and get completed orders
+            const history = orders.filter(o => 
+                o.orderId !== (currentOrder?.orderId) && 
+                o.status === 'completed'
+            ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <p>No previous orders</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = history.map(order => `
+                <div class="history-card">
+                    <div class="history-header">
+                        <div>
+                            <strong>${order.orderId}</strong>
+                            <span class="history-date">${formatDate(order.timestamp)}</span>
+                        </div>
+                        <span class="status-badge status-completed">
+                            <i class="fas fa-check-circle"></i> Completed
+                        </span>
+                    </div>
+                    <div class="history-items">
+                        ${order.items.slice(0, 3).map(item => 
+                            `<span>${item.name} × ${item.quantity}</span>`
+                        ).join('')}
+                        ${order.items.length > 3 ? `<span>+${order.items.length - 3} more</span>` : ''}
+                    </div>
+                    <div class="history-footer">
+                        <span>Table ${order.tableNumber}</span>
+                        <strong>RM ${order.total.toFixed(2)}</strong>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function startOrderUpdates() {
+            if (!currentOrder) return;
+            
+            // Simulate real-time updates every 10 seconds
+            orderUpdateInterval = setInterval(() => {
+                simulateOrderProgress();
+            }, 10000);
+        }
+        
+        function simulateOrderProgress() {
+            if (!currentOrder) {
+                clearInterval(orderUpdateInterval);
+                return;
+            }
+            
+            const statuses = ['pending', 'preparing', 'ready', 'completed'];
+            const currentStatusIndex = statuses.indexOf(currentOrder.status);
+            
+            // Random progress for stalls
+            currentOrder.stallOrders.forEach(stall => {
+                const currentStallStatus = currentOrder.stallStatuses[stall.stallName];
+                const stallStatusIndex = statuses.indexOf(currentStallStatus);
+                
+                // 30% chance to progress
+                if (Math.random() < 0.3 && stallStatusIndex < statuses.length - 1) {
+                    currentOrder.stallStatuses[stall.stallName] = statuses[stallStatusIndex + 1];
+                    showNotification(`${stall.stallName}: ${formatStatus(statuses[stallStatusIndex + 1])}`);
+                }
+            });
+            
+            // Update overall order status based on slowest stall
+            const allStallStatuses = Object.values(currentOrder.stallStatuses);
+            const minStatusIndex = Math.min(...allStallStatuses.map(s => statuses.indexOf(s)));
+            currentOrder.status = statuses[minStatusIndex];
+            
+            // Check if all completed
+            if (allStallStatuses.every(s => s === 'completed')) {
+                currentOrder.status = 'completed';
+                clearInterval(orderUpdateInterval);
+                showNotification('🎉 Your order is ready! Enjoy your meal!');
+            }
+            
+            // Save updated order
+            localStorage.setItem('currentOrder', JSON.stringify(currentOrder));
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const index = orders.findIndex(o => o.orderId === currentOrder.orderId);
+            if (index !== -1) {
+                orders[index] = currentOrder;
+                localStorage.setItem('orders', JSON.stringify(orders));
+            }
+            
+            // Refresh display
+            updateTimeline(currentOrder.status);
+            displayStallProgress();
+        }
+        
+        function getStatusIcon(status) {
+            const icons = {
+                pending: '<i class="fas fa-clock"></i>',
+                preparing: '<i class="fas fa-fire"></i>',
+                ready: '<i class="fas fa-bell"></i>',
+                completed: '<i class="fas fa-check-circle"></i>'
+            };
+            return icons[status] || '';
+        }
+        
+        function formatStatus(status) {
+            const labels = {
+                pending: 'Pending',
+                preparing: 'Preparing',
+                ready: 'Ready',
+                completed: 'Completed'
+            };
+            return labels[status] || status;
+        }
+        
+        function getProgressWidth(status) {
+            const widths = {
+                pending: 25,
+                preparing: 50,
+                ready: 75,
+                completed: 100
+            };
+            return widths[status] || 0;
+        }
+        
+        function getEstimatedTime(status) {
+            const times = {
+                pending: 'Estimated time: 15-20 min',
+                preparing: 'Estimated time: 10-15 min',
+                ready: 'Ready for pickup!',
+                completed: 'Completed'
+            };
+            return times[status] || '';
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        function showNotification(message) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('Sarawak Food Court', {
+                    body: message,
+                    icon: '../assets/images/logo.png'
+                });
+            }
+            
+            // Also show toast
+            const toast = document.createElement('div');
+            toast.className = 'toast notification';
+            toast.innerHTML = `<i class="fas fa-bell"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        
+        // Request notification permission on page load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (orderUpdateInterval) {
+                clearInterval(orderUpdateInterval);
+            }
+        });
+    </script>
+</body>
+</html>

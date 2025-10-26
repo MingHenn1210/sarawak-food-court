@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="home.html" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="header-title">
+                <h1 id="stallName">Loading...</h1>
+                <p class="subtitle" id="stallCategory">-</p>
+            </div>
+            <a href="cart.html" class="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-badge" id="cartCount">0</span>
+            </a>
+        </div>
+    </header>
+    
+    <!-- Stall Info Banner -->
+    <div class="stall-banner" id="stallBanner">
+        <!-- Will be populated dynamically -->
+    </div>
+    
+    <!-- Menu Categories -->
+    <div class="menu-categories" id="menuCategories">
+        <button class="category-tab active" onclick="filterMenu('all')">All</button>
+    </div>
+    
+    <!-- Menu Items -->
+    <main class="main-content">
+        <div class="menu-grid" id="menuGrid">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading menu...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Cart Summary -->
+    <div class="cart-summary" id="cartSummary" style="display: none;">
+        <div class="summary-content">
+            <div class="summary-info">
+                <span id="cartItemCount">0</span> items
+                <strong id="cartTotal">RM 0.00</strong>
+            </div>
+            <a href="cart.html" class="btn-primary">
+                View Cart <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Add to Cart Modal -->
+    <div class="modal" id="addToCartModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalItemName">Item Name</h2>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="modalItemImage" src="" alt="">
+                <p id="modalItemDescription">Description</p>
+                <div class="price-display">
+                    <span class="price">RM <span id="modalItemPrice">0.00</span></span>
+                </div>
+                
+                <!-- Quantity Selector -->
+                <div class="quantity-selector">
+                    <label>Quantity</label>
+                    <div class="quantity-controls">
+                        <button onclick="decreaseQuantity()">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="quantity" value="1" min="1" readonly>
+                        <button onclick="increaseQuantity()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Special Instructions -->
+                <div class="special-instructions">
+                    <label>Special Instructions (Optional)</label>
+                    <textarea id="specialInstructions" placeholder="E.g., No onions, extra spicy..."></textarea>
+                </div>
+                
+                <!-- Total Price -->
+                <div class="modal-total">
+                    <span>Total:</span>
+                    <strong>RM <span id="modalTotal">0.00</span></strong>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary btn-large" onclick="confirmAddToCart()">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/cart.js"></script>
+    <script>
+        let currentStall = null;
+        let currentItem = null;
+        let menuItems = [];
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const stallId = parseInt(urlParams.get('stall'));
+            
+            if (!stallId) {
+                window.location.href = 'home.html';
+                return;
+            }
+            
+            await loadStallAndMenu(stallId);
+            updateCartDisplay();
+        });
+        
+        async function loadStallAndMenu(stallId) {
+            try {
+                // Load stall info
+                const stallsResponse = await fetch('../data/stalls.json');
+                const stalls = await stallsResponse.json();
+                currentStall = stalls.find(s => s.id === stallId);
+                
+                if (!currentStall) {
+                    throw new Error('Stall not found');
+                }
+                
+                // Display stall info
+                document.getElementById('stallName').textContent = currentStall.name;
+                document.getElementById('stallCategory').textContent = currentStall.category;
+                
+                document.getElementById('stallBanner').innerHTML = `
+                    <div class="banner-image" style="background-image: url('${currentStall.image}')"></div>
+                    <div class="banner-info">
+                        <p>${currentStall.description}</p>
+                        <div class="banner-meta">
+                            <span><i class="fas fa-star"></i> ${currentStall.rating}</span>
+                            <span><i class="fas fa-clock"></i> 15-20 min</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Load menu items
+                const menuResponse = await fetch('../data/menus.json');
+                const allMenus = await menuResponse.json();
+                menuItems = allMenus.filter(item => item.stallId === stallId && item.available);
+                
+                // Extract unique categories
+                const categories = [...new Set(menuItems.map(item => item.category))];
+                displayCategories(categories);
+                displayMenu(menuItems);
+                
+            } catch (error) {
+                console.error('Error loading menu:', error);
+                document.getElementById('menuGrid').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Unable to load menu. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayCategories(categories) {
+            const container = document.getElementById('menuCategories');
+            const tabs = categories.map(cat => 
+                `<button class="category-tab" onclick="filterMenu('${cat}')">${cat}</button>`
+            ).join('');
+            container.innerHTML = `
+                <button class="category-tab active" onclick="filterMenu('all')">All</button>
+                ${tabs}
+            `;
+        }
+        
+        function displayMenu(items) {
+            const grid = document.getElementById('menuGrid');
+            
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-utensils"></i>
+                        <p>No items available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = items.map(item => `
+                <div class="menu-item" data-category="${item.category}">
+                    <div class="item-image" style="background-image: url('${item.image}')">
+                        ${item.isPopular ? '<span class="popular-badge">Popular</span>' : ''}
+                        ${!item.available ? '<div class="sold-out-badge">Sold Out</div>' : ''}
+                    </div>
+                    <div class="item-info">
+                        <h3>${item.name}</h3>
+                        <p class="item-description">${item.description}</p>
+                        <div class="item-footer">
+                            <span class="price">RM ${item.price.toFixed(2)}</span>
+                            <button class="btn-add" onclick='openAddToCartModal(${JSON.stringify(item)})' 
+                                    ${!item.available ? 'disabled' : ''}>
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterMenu(category) {
+            // Update active tab
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter items
+            const items = document.querySelectorAll('.menu-item');
+            items.forEach(item => {
+                if (category === 'all' || item.dataset.category === category) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function openAddToCartModal(item) {
+            currentItem = item;
+            document.getElementById('modalItemName').textContent = item.name;
+            document.getElementById('modalItemImage').src = item.image;
+            document.getElementById('modalItemDescription').textContent = item.description;
+            document.getElementById('modalItemPrice').textContent = item.price.toFixed(2);
+            document.getElementById('quantity').value = 1;
+            document.getElementById('specialInstructions').value = '';
+            updateModalTotal();
+            document.getElementById('addToCartModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('addToCartModal').classList.remove('show');
+        }
+        
+        function increaseQuantity() {
+            const input = document.getElementById('quantity');
+            input.value = parseInt(input.value) + 1;
+            updateModalTotal();
+        }
+        
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+                updateModalTotal();
+            }
+        }
+        
+        function updateModalTotal() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const total = currentItem.price * quantity;
+            document.getElementById('modalTotal').textContent = total.toFixed(2);
+        }
+        
+        function confirmAddToCart() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const instructions = document.getElementById('specialInstructions').value;
+            
+            addToCart({
+                ...currentItem,
+                stallName: currentStall.name,
+                quantity: quantity,
+                specialInstructions: instructions
+            });
+            
+            closeModal();
+            updateCartDisplay();
+            
+            // Show success message
+            showToast('Item added to cart!');
+        }
+        
+        function updateCartDisplay() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            document.getElementById('cartCount').textContent = count;
+            
+            if (count > 0) {
+                document.getElementById('cartSummary').style.display = 'block';
+                document.getElementById('cartItemCount').textContent = count;
+                document.getElementById('cartTotal').textContent = `RM ${total.toFixed(2)}`;
+            } else {
+                document.getElementById('cartSummary').style.display = 'none';
+            }
+        }
+        
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

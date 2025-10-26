@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="home.html" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>My Cart</h1>
+            <button class="clear-cart-btn" onclick="clearCart()">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <!-- Cart Items by Stall -->
+        <div class="cart-container" id="cartContainer">
+            <!-- Will be populated dynamically -->
+        </div>
+        
+        <!-- Empty Cart State -->
+        <div class="empty-cart" id="emptyCart" style="display: none;">
+            <i class="fas fa-shopping-cart"></i>
+            <h2>Your cart is empty</h2>
+            <p>Add items from our food stalls to get started</p>
+            <a href="home.html" class="btn-primary">
+                <i class="fas fa-utensils"></i> Browse Stalls
+            </a>
+        </div>
+    </main>
+    
+    <!-- Order Summary Footer -->
+    <div class="order-summary" id="orderSummary">
+        <div class="summary-details">
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <strong id="subtotal">RM 0.00</strong>
+            </div>
+            <div class="summary-row small">
+                <span>Service Charge (6%)</span>
+                <span id="serviceCharge">RM 0.00</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total</span>
+                <strong id="total">RM 0.00</strong>
+            </div>
+        </div>
+        <button class="btn-primary btn-large" onclick="proceedToPayment()">
+            Proceed to Payment <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+    
+    <!-- Edit Item Modal -->
+    <div class="modal" id="editItemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="editItemName">Edit Item</h2>
+                <button class="modal-close" onclick="closeEditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="quantity-selector">
+                    <label>Quantity</label>
+                    <div class="quantity-controls">
+                        <button onclick="decreaseEditQuantity()">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="editQuantity" value="1" min="1" readonly>
+                        <button onclick="increaseEditQuantity()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="special-instructions">
+                    <label>Special Instructions</label>
+                    <textarea id="editInstructions" placeholder="E.g., No onions, extra spicy..."></textarea>
+                </div>
+                
+                <div class="modal-total">
+                    <span>Total:</span>
+                    <strong>RM <span id="editTotal">0.00</span></strong>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/cart.js"></script>
+    <script>
+        let currentEditIndex = -1;
+        let currentEditItem = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            displayCart();
+        });
+        
+        function displayCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const container = document.getElementById('cartContainer');
+            const emptyCart = document.getElementById('emptyCart');
+            const orderSummary = document.getElementById('orderSummary');
+            
+            if (cart.length === 0) {
+                container.style.display = 'none';
+                emptyCart.style.display = 'flex';
+                orderSummary.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            emptyCart.style.display = 'none';
+            orderSummary.style.display = 'block';
+            
+            // Group items by stall
+            const groupedCart = cart.reduce((acc, item, index) => {
+                const stallName = item.stallName || 'Unknown Stall';
+                if (!acc[stallName]) {
+                    acc[stallName] = [];
+                }
+                acc[stallName].push({ ...item, originalIndex: index });
+                return acc;
+            }, {});
+            
+            // Display grouped items
+            container.innerHTML = Object.entries(groupedCart).map(([stallName, items]) => {
+                const stallTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                return `
+                    <div class="cart-stall-group">
+                        <div class="stall-header">
+                            <h3><i class="fas fa-store"></i> ${stallName}</h3>
+                            <span class="stall-total">RM ${stallTotal.toFixed(2)}</span>
+                        </div>
+                        <div class="cart-items">
+                            ${items.map(item => `
+                                <div class="cart-item">
+                                    <img src="${item.image}" alt="${item.name}" class="item-image">
+                                    <div class="item-details">
+                                        <h4>${item.name}</h4>
+                                        ${item.specialInstructions ? 
+                                            `<p class="instructions"><i class="fas fa-comment"></i> ${item.specialInstructions}</p>` 
+                                            : ''}
+                                        <div class="item-price">RM ${item.price.toFixed(2)} × ${item.quantity}</div>
+                                    </div>
+                                    <div class="item-actions">
+                                        <button class="btn-icon" onclick="editItem(${item.originalIndex})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-icon btn-danger" onclick="removeItem(${item.originalIndex})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="item-total">
+                                        RM ${(item.price * item.quantity).toFixed(2)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            updateOrderSummary();
+        }
+        
+        function updateOrderSummary() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const serviceCharge = subtotal * 0.06;
+            const total = subtotal + serviceCharge;
+            
+            document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
+            document.getElementById('serviceCharge').textContent = `RM ${serviceCharge.toFixed(2)}`;
+            document.getElementById('total').textContent = `RM ${total.toFixed(2)}`;
+        }
+        
+        function editItem(index) {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            currentEditIndex = index;
+            currentEditItem = cart[index];
+            
+            document.getElementById('editItemName').textContent = currentEditItem.name;
+            document.getElementById('editQuantity').value = currentEditItem.quantity;
+            document.getElementById('editInstructions').value = currentEditItem.specialInstructions || '';
+            updateEditTotal();
+            
+            document.getElementById('editItemModal').classList.add('show');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editItemModal').classList.remove('show');
+        }
+        
+        function increaseEditQuantity() {
+            const input = document.getElementById('editQuantity');
+            input.value = parseInt(input.value) + 1;
+            updateEditTotal();
+        }
+        
+        function decreaseEditQuantity() {
+            const input = document.getElementById('editQuantity');
+            if (parseInt(input.value) > 1) {
+                input.value = parseInt(input.value) - 1;
+                updateEditTotal();
+            }
+        }
+        
+        function updateEditTotal() {
+            const quantity = parseInt(document.getElementById('editQuantity').value);
+            const total = currentEditItem.price * quantity;
+            document.getElementById('editTotal').textContent = total.toFixed(2);
+        }
+        
+        function saveEdit() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart[currentEditIndex].quantity = parseInt(document.getElementById('editQuantity').value);
+            cart[currentEditIndex].specialInstructions = document.getElementById('editInstructions').value;
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            closeEditModal();
+            displayCart();
+            showToast('Item updated successfully!');
+        }
+        
+        function removeItem(index) {
+            if (confirm('Remove this item from cart?')) {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                cart.splice(index, 1);
+                localStorage.setItem('cart', JSON.stringify(cart));
+                displayCart();
+                showToast('Item removed from cart');
+            }
+        }
+        
+        function clearCart() {
+            if (confirm('Clear all items from cart?')) {
+                localStorage.setItem('cart', '[]');
+                displayCart();
+                showToast('Cart cleared');
+            }
+        }
+        
+        function proceedToPayment() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            if (cart.length === 0) {
+                showToast('Your cart is empty!');
+                return;
+            }
+            window.location.href = 'payment.html';
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

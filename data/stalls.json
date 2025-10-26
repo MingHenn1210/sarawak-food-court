@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1,
+    "name": "Nasi Lemak Corner",
+    "description": "Authentic Malaysian Nasi Lemak with sambal and sides",
+    "category": "asian",
+    "image": "https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=500",
+    "rating": 4.8,
+    "itemCount": 12,
+    "isOpen": true,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_1"
+  },
+  {
+    "id": 2,
+    "name": "Laksa House",
+    "description": "Sarawak Laksa and traditional noodle dishes",
+    "category": "asian",
+    "image": "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=500",
+    "rating": 4.9,
+    "itemCount": 8,
+    "isOpen": true,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_2"
+  },
+  {
+    "id": 3,
+    "name": "Western Grill",
+    "description": "Burgers, steaks, and western favorites",
+    "category": "western",
+    "image": "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500",
+    "rating": 4.6,
+    "itemCount": 15,
+    "isOpen": true,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_3"
+  },
+  {
+    "id": 4,
+    "name": "Kolo Mee Specialist",
+    "description": "Traditional Sarawak Kolo Mee and variations",
+    "category": "asian",
+    "image": "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=500",
+    "rating": 4.7,
+    "itemCount": 6,
+    "isOpen": true,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_4"
+  },
+  {
+    "id": 5,
+    "name": "Fresh Drinks Bar",
+    "description": "Fresh juices, smoothies, and local beverages",
+    "category": "drinks",
+    "image": "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=500",
+    "rating": 4.5,
+    "itemCount": 20,
+    "isOpen": true,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_5"
+  },
+  {
+    "id": 6,
+    "name": "Sweet Treats Dessert",
+    "description": "Local desserts, cakes, and sweet delights",
+    "category": "dessert",
+    "image": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=500",
+    "rating": 4.4,
+    "itemCount": 18,
+    "isOpen": false,
+    "qrCode": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=payment_stall_6"
+  }
+]
