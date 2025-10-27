@@ -1,0 +1,55 @@
+[
+  {
+    "id": 1,
+    "name": "Basic Plan",
+    "price": 99,
+    "duration": "monthly",
+    "features": [
+      "Up to 20 menu items",
+      "Basic order management",
+      "QR code payment",
+      "Email support",
+      "Basic analytics"
+    ],
+    "maxMenuItems": 20,
+    "color": "#3498db"
+  },
+  {
+    "id": 2,
+    "name": "Pro Plan",
+    "price": 199,
+    "duration": "monthly",
+    "features": [
+      "Up to 50 menu items",
+      "Advanced order management",
+      "QR code payment",
+      "Priority support",
+      "Advanced analytics",
+      "Custom branding",
+      "2 advertisements per month"
+    ],
+    "maxMenuItems": 50,
+    "adsPerMonth": 2,
+    "color": "#9b59b6"
+  },
+  {
+    "id": 3,
+    "name": "Enterprise Plan",
+    "price": 399,
+    "duration": "monthly",
+    "features": [
+      "Unlimited menu items",
+      "Premium order management",
+      "QR code payment",
+      "24/7 support",
+      "Premium analytics",
+      "Full custom branding",
+      "5 advertisements per month",
+      "API access",
+      "Multi-location support"
+    ],
+    "maxMenuItems": -1,
+    "adsPerMonth": 5,
+    "color": "#e74c3c"
+  }
+]

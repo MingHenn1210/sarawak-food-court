@@ -7,7 +7,17 @@
     "name": "Ahmad Rahman",
     "stallName": "Nasi Lemak Corner",
     "email": "ahmad@nasilemak.com",
-    "phone": "+60123456789"
+    "phone": "+60123456789",
+    "subscription": {
+      "planId": 2,
+      "planName": "Pro Plan",
+      "startDate": "2025-10-01",
+      "endDate": "2025-11-01",
+      "status": "active",
+      "autoRenew": true
+    },
+    "joinedDate": "2025-09-15",
+    "status": "active"
   },
   {
     "id": 2,
@@ -17,7 +27,17 @@
     "name": "Siti Wong",
     "stallName": "Laksa House",
     "email": "siti@laksahouse.com",
-    "phone": "+60123456790"
+    "phone": "+60123456790",
+    "subscription": {
+      "planId": 1,
+      "planName": "Basic Plan",
+      "startDate": "2025-09-20",
+      "endDate": "2025-10-20",
+      "status": "active",
+      "autoRenew": true
+    },
+    "joinedDate": "2025-08-10",
+    "status": "active"
   },
   {
     "id": 3,
@@ -27,7 +47,17 @@
     "name": "David Tan",
     "stallName": "Western Grill",
     "email": "david@westerngrill.com",
-    "phone": "+60123456791"
+    "phone": "+60123456791",
+    "subscription": {
+      "planId": 3,
+      "planName": "Enterprise Plan",
+      "startDate": "2025-10-15",
+      "endDate": "2025-11-15",
+      "status": "active",
+      "autoRenew": true
+    },
+    "joinedDate": "2025-07-01",
+    "status": "active"
   },
   {
     "id": 4,
@@ -37,7 +67,17 @@
     "name": "Lina Chen",
     "stallName": "Kolo Mee Specialist",
     "email": "lina@kolomee.com",
-    "phone": "+60123456792"
+    "phone": "+60123456792",
+    "subscription": {
+      "planId": 1,
+      "planName": "Basic Plan",
+      "startDate": "2025-08-10",
+      "endDate": "2025-10-25",
+      "status": "expiring",
+      "autoRenew": false
+    },
+    "joinedDate": "2025-08-01",
+    "status": "active"
   },
   {
     "id": 5,
@@ -47,7 +87,17 @@
     "name": "Raj Kumar",
     "stallName": "Fresh Drinks Bar",
     "email": "raj@freshdrinks.com",
-    "phone": "+60123456793"
+    "phone": "+60123456793",
+    "subscription": {
+      "planId": 2,
+      "planName": "Pro Plan",
+      "startDate": "2025-09-01",
+      "endDate": "2025-10-01",
+      "status": "expired",
+      "autoRenew": false
+    },
+    "joinedDate": "2025-06-15",
+    "status": "suspended"
   },
   {
     "id": 10,

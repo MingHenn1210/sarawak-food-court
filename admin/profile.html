@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Profile - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <span>Admin Profile</span>
+        </div>
+    </nav>
+    
+    <main class="dashboard-content">
+        <!-- Profile Card -->
+        <div class="profile-container">
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    <i class="fas fa-user-shield"></i>
+                </div>
+                <h2 id="adminName">Admin User</h2>
+                <p id="adminEmail">admin@sarawakhub.com</p>
+                <span class="admin-badge">System Administrator</span>
+            </div>
+            
+            <!-- Profile Info -->
+            <div class="settings-section">
+                <h3><i class="fas fa-user"></i> Account Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Username</label>
+                        <p id="username">admin</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Email</label>
+                        <p id="email">admin@sarawakhub.com</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Role</label>
+                        <p>Administrator</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Last Login</label>
+                        <p id="lastLogin">Today</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Links -->
+            <div class="settings-section">
+                <h3><i class="fas fa-cog"></i> System Management</h3>
+                <div class="actions-list">
+                    <a href="subscriptions.html" class="action-link">
+                        <div class="action-link-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="action-link-content">
+                            <h4>Subscription Plans</h4>
+                            <p>View and manage subscription plans</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    
+                    <a href="hawkers.html" class="action-link">
+                        <div class="action-link-icon">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <div class="action-link-content">
+                            <h4>Hawker Management</h4>
+                            <p>Manage hawker accounts and stalls</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    
+                    <a href="advertisements.html" class="action-link">
+                        <div class="action-link-icon">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div class="action-link-content">
+                            <h4>Advertisements</h4>
+                            <p>Create and manage advertisements</p>
+                        </div>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Change Password -->
+            <div class="settings-section">
+                <h3><i class="fas fa-lock"></i> Security</h3>
+                <button class="btn-secondary" style="width: 100%;" onclick="alert('Change password feature coming soon!')">
+                    <i class="fas fa-key"></i> Change Password
+                </button>
+            </div>
+            
+            <!-- Logout Button -->
+            <div class="settings-section">
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav admin-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+        <a href="profile.html" class="nav-item active">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script>
+        let session = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadProfile();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            session = JSON.parse(sessionData);
+        }
+        
+        async function loadProfile() {
+            try {
+                const response = await fetch('../data/users.json');
+                const users = await response.json();
+                
+                const admin = users.find(u => u.id === session.userId);
+                
+                if (admin) {
+                    document.getElementById('adminName').textContent = admin.name;
+                    document.getElementById('adminEmail').textContent = admin.email;
+                    document.getElementById('username').textContent = admin.username;
+                    document.getElementById('email').textContent = admin.email;
+                    
+                    if (session.loginTime) {
+                        const loginDate = new Date(session.loginTime);
+                        document.getElementById('lastLogin').textContent = loginDate.toLocaleString();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminSession');
+                sessionStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+    
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .profile-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 3rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .profile-card h2 {
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+        
+        .profile-card p {
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .admin-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+        
+        .settings-section {
+            background-color: var(--bg-primary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .settings-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .actions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .action-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+        
+        .action-link:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .action-link-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        .action-link-content {
+            flex: 1;
+        }
+        
+        .action-link-content h4 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1rem;
+        }
+        
+        .action-link-content p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .action-link > i {
+            color: var(--text-secondary);
+        }
+        
+        .btn-logout {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+        
+        .btn-logout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+        
+        .btn-logout:active {
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 480px) {
+            .profile-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .profile-avatar {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5rem;
+            }
+            
+            .settings-section {
+                padding: 1.25rem 1rem;
+            }
+        }
+    </style>
+</body>
+</html>

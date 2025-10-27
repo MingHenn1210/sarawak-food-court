@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-shield-alt"></i>
+            <span>Admin Panel</span>
+        </div>
+        <div class="nav-actions">
+            <button class="user-btn" onclick="logout()">
+                <i class="fas fa-user-circle"></i>
+                <span id="adminName">Admin</span>
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon hawkers">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalHawkers">0</h3>
+                    <p>Total Hawkers</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon active">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="activeHawkers">0</h3>
+                    <p>Active Subscriptions</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon expiring">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="expiringHawkers">0</h3>
+                    <p>Expiring Soon</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="monthlyRevenue">RM 0</h3>
+                    <p>Monthly Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            <div class="actions-grid">
+                <a href="hawkers.html" class="action-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Manage Hawkers</h3>
+                    <p>View and manage hawker accounts</p>
+                </a>
+                <a href="advertisements.html" class="action-card">
+                    <i class="fas fa-bullhorn"></i>
+                    <h3>Advertisements</h3>
+                    <p>Create and manage ads</p>
+                </a>
+                <a href="subscriptions.html" class="action-card">
+                    <i class="fas fa-credit-card"></i>
+                    <h3>Subscriptions</h3>
+                    <p>Manage subscription plans</p>
+                </a>
+                <a href="reports.html" class="action-card">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Reports</h3>
+                    <p>View system analytics</p>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> Recent Activities</h2>
+            </div>
+            <div class="activities-list" id="recentActivities">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading activities...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav admin-nav">
+        <a href="dashboard.html" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script>
+        let session = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadDashboard();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            session = JSON.parse(sessionData);
+            document.getElementById('adminName').textContent = session.name;
+        }
+        
+        async function loadDashboard() {
+            try {
+                const usersResponse = await fetch('../data/users.json');
+                const users = await usersResponse.json();
+                
+                const hawkers = users.filter(u => u.type === 'hawker');
+                const activeHawkers = hawkers.filter(h => h.subscription?.status === 'active');
+                const expiringHawkers = hawkers.filter(h => h.subscription?.status === 'expiring');
+                
+                // Calculate monthly revenue
+                const plansResponse = await fetch('../data/plans.json');
+                const plans = await plansResponse.json();
+                
+                let revenue = 0;
+                activeHawkers.forEach(hawker => {
+                    const plan = plans.find(p => p.id === hawker.subscription.planId);
+                    if (plan) revenue += plan.price;
+                });
+                
+                // Update stats
+                document.getElementById('totalHawkers').textContent = hawkers.length;
+                document.getElementById('activeHawkers').textContent = activeHawkers.length;
+                document.getElementById('expiringHawkers').textContent = expiringHawkers.length;
+                document.getElementById('monthlyRevenue').textContent = `RM ${revenue}`;
+                
+                // Display recent activities
+                displayActivities(hawkers);
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        function displayActivities(hawkers) {
+            const container = document.getElementById('recentActivities');
+            
+            const activities = [];
+            
+            // Generate sample activities
+            hawkers.slice(0, 5).forEach(hawker => {
+                const status = hawker.subscription?.status || 'unknown';
+                let icon = 'fa-check-circle';
+                let color = 'success';
+                
+                if (status === 'expired') {
+                    icon = 'fa-times-circle';
+                    color = 'danger';
+                } else if (status === 'expiring') {
+                    icon = 'fa-exclamation-triangle';
+                    color = 'warning';
+                }
+                
+                activities.push(`
+                    <div class="activity-item">
+                        <div class="activity-icon ${color}">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h4>${hawker.stallName}</h4>
+                            <p>Plan: ${hawker.subscription?.planName || 'None'} - Status: ${status}</p>
+                            <span class="activity-time">Expires: ${hawker.subscription?.endDate || 'N/A'}</span>
+                        </div>
+                    </div>
+                `);
+            });
+            
+            container.innerHTML = activities.join('');
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminSession');
+                sessionStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

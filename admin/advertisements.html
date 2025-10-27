@@ -3,35 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advertisement Management</title>
+    <title>Advertisement Management - Admin Panel</title>
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="hawker-dashboard">
+<body class="admin-dashboard">
     <nav class="top-nav">
         <div class="nav-brand">
-            <i class="fas fa-bullhorn"></i>
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
             <span>Advertisement Management</span>
         </div>
-        <button class="btn-primary" onclick="showAddAdModal()">
-            <i class="fas fa-plus"></i> Add Advertisement
-        </button>
     </nav>
     
     <main class="dashboard-content">
         <div class="ads-grid" id="adsGrid">
-            <div class="ad-card">
-                <h3>🎉 Special Offer!</h3>
-                <p>Get 10% off on orders above RM30</p>
-                <span class="ad-status active">Active</span>
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading advertisements...</p>
             </div>
         </div>
     </main>
     
+    <!-- Floating Add Button -->
+    <button class="fab-button" onclick="showAddAdModal()" title="Add Advertisement">
+        <i class="fas fa-plus"></i>
+    </button>
+    
+    <!-- Add/Edit Ad Modal -->
+    <div class="modal" id="adModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add Advertisement</h2>
+                <button class="modal-close" onclick="closeAdModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="adForm" onsubmit="saveAd(event)">
+                <div class="form-group">
+                    <label for="adTitle">Advertisement Title *</label>
+                    <input type="text" id="adTitle" placeholder="e.g., Weekend Special!" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="adDescription">Description *</label>
+                    <textarea id="adDescription" rows="3" placeholder="e.g., Get 20% off on all orders" required></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adType">Type *</label>
+                        <select id="adType" required>
+                            <option value="banner">Banner</option>
+                            <option value="popup">Popup</option>
+                            <option value="slide">Slide</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="adImage">Image URL</label>
+                        <input type="text" id="adImage" placeholder="https://...">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adStartDate">Start Date *</label>
+                        <input type="date" id="adStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="adEndDate">End Date *</label>
+                        <input type="date" id="adEndDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="adHawker">Hawker (Optional)</label>
+                    <select id="adHawker">
+                        <option value="">General Advertisement</option>
+                        <!-- Hawkers will be loaded here -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="adActive" checked>
+                        Active (visible to customers)
+                    </label>
+                </div>
+                
+                <input type="hidden" id="adId">
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeAdModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save Advertisement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav admin-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item active">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
     <script>
+        let ads = [];
+        let hawkers = [];
+        let editingAdId = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadData();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+        
+        async function loadData() {
+            try {
+                const [adsResponse, usersResponse] = await Promise.all([
+                    fetch('../data/ads.json'),
+                    fetch('../data/users.json')
+                ]);
+                
+                ads = await adsResponse.json();
+                const users = await usersResponse.json();
+                hawkers = users.filter(u => u.type === 'hawker');
+                
+                displayAds();
+                loadHawkerOptions();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        function displayAds() {
+            const container = document.getElementById('adsGrid');
+            
+            if (ads.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bullhorn"></i>
+                        <p>No advertisements yet</p>
+                        <button class="btn-primary" onclick="showAddAdModal()">
+                            <i class="fas fa-plus"></i> Create Your First Ad
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = ads.map(ad => `
+                <div class="ad-card ${ad.active ? 'active' : 'inactive'}">
+                    ${ad.image ? `
+                        <div class="ad-image" style="background-image: url('${ad.image}')"></div>
+                    ` : ''}
+                    <div class="ad-content">
+                        <div class="ad-header">
+                            <h3>${ad.title}</h3>
+                            <span class="status-badge status-${ad.active ? 'active' : 'inactive'}">
+                                ${ad.active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <p>${ad.description}</p>
+                        <div class="ad-meta">
+                            <span class="ad-type">
+                                <i class="fas fa-tag"></i> ${ad.type}
+                            </span>
+                            <span class="ad-dates">
+                                <i class="fas fa-calendar"></i> ${ad.startDate} - ${ad.endDate}
+                            </span>
+                        </div>
+                        ${ad.hawker ? `
+                            <div class="ad-hawker">
+                                <i class="fas fa-store"></i> ${ad.hawker}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="ad-actions">
+                        <button class="btn-icon" onclick="editAd(${ad.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" onclick="toggleAdStatus(${ad.id})" title="Toggle Status">
+                            <i class="fas fa-${ad.active ? 'eye-slash' : 'eye'}"></i>
+                        </button>
+                        <button class="btn-icon btn-danger" onclick="deleteAd(${ad.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function loadHawkerOptions() {
+            const select = document.getElementById('adHawker');
+            const options = hawkers.map(h => 
+                `<option value="${h.stallName}">${h.stallName}</option>`
+            ).join('');
+            select.innerHTML += options;
+        }
+        
         function showAddAdModal() {
-            alert('Advertisement management features coming soon!');
+            editingAdId = null;
+            document.getElementById('modalTitle').textContent = 'Add Advertisement';
+            document.getElementById('adForm').reset();
+            document.getElementById('adId').value = '';
+            document.getElementById('adStartDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('adModal').classList.add('show');
+        }
+        
+        function editAd(adId) {
+            const ad = ads.find(a => a.id === adId);
+            if (!ad) return;
+            
+            editingAdId = adId;
+            document.getElementById('modalTitle').textContent = 'Edit Advertisement';
+            document.getElementById('adId').value = ad.id;
+            document.getElementById('adTitle').value = ad.title;
+            document.getElementById('adDescription').value = ad.description;
+            document.getElementById('adType').value = ad.type;
+            document.getElementById('adImage').value = ad.image || '';
+            document.getElementById('adStartDate').value = ad.startDate;
+            document.getElementById('adEndDate').value = ad.endDate;
+            document.getElementById('adHawker').value = ad.hawker || '';
+            document.getElementById('adActive').checked = ad.active;
+            
+            document.getElementById('adModal').classList.add('show');
+        }
+        
+        function saveAd(event) {
+            event.preventDefault();
+            
+            const adData = {
+                id: editingAdId || Date.now(),
+                title: document.getElementById('adTitle').value,
+                description: document.getElementById('adDescription').value,
+                type: document.getElementById('adType').value,
+                image: document.getElementById('adImage').value || null,
+                startDate: document.getElementById('adStartDate').value,
+                endDate: document.getElementById('adEndDate').value,
+                hawker: document.getElementById('adHawker').value || null,
+                active: document.getElementById('adActive').checked
+            };
+            
+            if (editingAdId) {
+                const index = ads.findIndex(a => a.id === editingAdId);
+                ads[index] = adData;
+                showToast('Advertisement updated successfully!');
+            } else {
+                ads.push(adData);
+                showToast('Advertisement created successfully!');
+            }
+            
+            closeAdModal();
+            displayAds();
+        }
+        
+        function toggleAdStatus(adId) {
+            const ad = ads.find(a => a.id === adId);
+            if (ad) {
+                ad.active = !ad.active;
+                displayAds();
+                showToast(`Advertisement ${ad.active ? 'activated' : 'deactivated'}`);
+            }
+        }
+        
+        function deleteAd(adId) {
+            if (confirm('Are you sure you want to delete this advertisement?')) {
+                ads = ads.filter(a => a.id !== adId);
+                displayAds();
+                showToast('Advertisement deleted successfully!');
+            }
+        }
+        
+        function closeAdModal() {
+            document.getElementById('adModal').classList.remove('show');
+            editingAdId = null;
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
     </script>
 </body>

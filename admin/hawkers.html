@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hawker Management - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <span>Hawker Management</span>
+        </div>
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterHawkers('all')">All</button>
+            <button class="filter-tab" onclick="filterHawkers('active')">Active</button>
+            <button class="filter-tab" onclick="filterHawkers('expiring')">Expiring</button>
+            <button class="filter-tab" onclick="filterHawkers('expired')">Expired</button>
+        </div>
+    </nav>
+    
+    <main class="dashboard-content">
+        <div class="hawkers-list" id="hawkersList">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading hawkers...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Floating Add Hawker Button -->
+    <button class="fab-button" onclick="showAddHawkerModal()" title="Add New Hawker">
+        <i class="fas fa-plus"></i>
+    </button>
+    
+    <!-- Add Hawker Modal -->
+    <div class="modal" id="addHawkerModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>Add New Hawker</h2>
+                <button class="modal-close" onclick="closeAddHawkerModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="addHawkerForm" onsubmit="addHawker(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newStallName">Stall Name *</label>
+                        <input type="text" id="newStallName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newOwnerName">Owner Name *</label>
+                        <input type="text" id="newOwnerName" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newEmail">Email *</label>
+                        <input type="email" id="newEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPhone">Phone *</label>
+                        <input type="tel" id="newPhone" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newStallId">Stall ID *</label>
+                        <input type="text" id="newStallId" placeholder="e.g., stall6" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Password *</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="newPlan">Subscription Plan *</label>
+                    <select id="newPlan" required>
+                        <!-- Plans will be loaded here -->
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newStartDate">Start Date *</label>
+                        <input type="date" id="newStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="newAutoRenew" checked>
+                            Enable auto-renewal
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeAddHawkerModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Add Hawker
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Hawker Detail Modal -->
+    <div class="modal" id="hawkerModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="modalTitle">Hawker Details</h2>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="hawkerDetails">
+                <!-- Details will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Change Plan Modal -->
+    <div class="modal" id="planModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Change Subscription Plan</h2>
+                <button class="modal-close" onclick="closePlanModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="planForm" onsubmit="changePlan(event)">
+                <input type="hidden" id="hawkerId">
+                <div class="form-group">
+                    <label for="planSelect">Select New Plan</label>
+                    <select id="planSelect" required>
+                        <!-- Plans will be loaded here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="autoRenew" checked>
+                        Enable auto-renewal
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closePlanModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Update Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav admin-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item active">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script>
+        let hawkers = [];
+        let plans = [];
+        let currentFilter = 'all';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadData();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+        
+        async function loadData() {
+            try {
+                const [usersResponse, plansResponse] = await Promise.all([
+                    fetch('../data/users.json'),
+                    fetch('../data/plans.json')
+                ]);
+                
+                const users = await usersResponse.json();
+                hawkers = users.filter(u => u.type === 'hawker');
+                plans = await plansResponse.json();
+                
+                displayHawkers();
+                loadPlanOptions();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        function filterHawkers(filter) {
+            currentFilter = filter;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            displayHawkers();
+        }
+        
+        function displayHawkers() {
+            const container = document.getElementById('hawkersList');
+            
+            let filteredHawkers = hawkers;
+            
+            if (currentFilter !== 'all') {
+                filteredHawkers = hawkers.filter(h => h.subscription?.status === currentFilter);
+            }
+            
+            if (filteredHawkers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-store"></i>
+                        <p>No hawkers found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredHawkers.map(hawker => {
+                const status = hawker.subscription?.status || 'unknown';
+                const plan = plans.find(p => p.id === hawker.subscription?.planId);
+                
+                return `
+                    <div class="hawker-card ${status}">
+                        <div class="hawker-header">
+                            <div class="hawker-info">
+                                <div class="hawker-icon">
+                                    <i class="fas fa-store-alt"></i>
+                                </div>
+                                <div>
+                                    <h3>${hawker.stallName}</h3>
+                                    <p class="hawker-owner">${hawker.name}</p>
+                                </div>
+                            </div>
+                            <span class="status-badge status-${status}">
+                                ${status.charAt(0).toUpperCase() + status.slice(1)}
+                            </span>
+                        </div>
+                        
+                        <div class="hawker-details">
+                            <div class="detail-row">
+                                <i class="fas fa-envelope"></i>
+                                <span>${hawker.email}</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-phone"></i>
+                                <span>${hawker.phone}</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-credit-card"></i>
+                                <span>${hawker.subscription?.planName || 'No Plan'} ${plan ? `(RM ${plan.price}/mo)` : ''}</span>
+                            </div>
+                            <div class="detail-row">
+                                <i class="fas fa-calendar"></i>
+                                <span>Expires: ${hawker.subscription?.endDate || 'N/A'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="hawker-actions">
+                            <button class="btn-icon" onclick="viewHawkerDetails(${hawker.id})" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-icon" onclick="showChangePlanModal(${hawker.id})" title="Change Plan">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-icon btn-danger" onclick="deleteHawker(${hawker.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function viewHawkerDetails(hawkerId) {
+            const hawker = hawkers.find(h => h.id === hawkerId);
+            if (!hawker) return;
+            
+            const plan = plans.find(p => p.id === hawker.subscription?.planId);
+            
+            document.getElementById('hawkerDetails').innerHTML = `
+                <div class="detail-section">
+                    <h3><i class="fas fa-store"></i> Stall Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Stall Name</label>
+                            <p>${hawker.stallName}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Owner Name</label>
+                            <p>${hawker.name}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Email</label>
+                            <p>${hawker.email}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Phone</label>
+                            <p>${hawker.phone}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Stall ID</label>
+                            <p>${hawker.stallId}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Joined Date</label>
+                            <p>${hawker.joinedDate || 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3><i class="fas fa-credit-card"></i> Subscription Details</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Current Plan</label>
+                            <p style="color: ${plan?.color}; font-weight: 700;">${hawker.subscription?.planName || 'None'}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Monthly Price</label>
+                            <p>RM ${plan?.price || 0}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Status</label>
+                            <p><span class="status-badge status-${hawker.subscription?.status}">${hawker.subscription?.status || 'Unknown'}</span></p>
+                        </div>
+                        <div class="info-item">
+                            <label>Start Date</label>
+                            <p>${hawker.subscription?.startDate || 'N/A'}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>End Date</label>
+                            <p>${hawker.subscription?.endDate || 'N/A'}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Auto Renew</label>
+                            <p>${hawker.subscription?.autoRenew ? 'Yes' : 'No'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${plan ? `
+                <div class="detail-section">
+                    <h3><i class="fas fa-list"></i> Plan Features</h3>
+                    <ul class="features-list">
+                        ${plan.features.map(f => `<li><i class="fas fa-check"></i> ${f}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('hawkerModal').classList.add('show');
+        }
+        
+        function showChangePlanModal(hawkerId) {
+            const hawker = hawkers.find(h => h.id === hawkerId);
+            if (!hawker) return;
+            
+            document.getElementById('hawkerId').value = hawkerId;
+            document.getElementById('planSelect').value = hawker.subscription?.planId || '';
+            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('autoRenew').checked = hawker.subscription?.autoRenew || false;
+            
+            document.getElementById('planModal').classList.add('show');
+        }
+        
+        function loadPlanOptions() {
+            const select = document.getElementById('planSelect');
+            select.innerHTML = plans.map(plan => `
+                <option value="${plan.id}">${plan.name} - RM ${plan.price}/month</option>
+            `).join('');
+            
+            // Also load for add hawker form
+            const newPlanSelect = document.getElementById('newPlan');
+            if (newPlanSelect) {
+                newPlanSelect.innerHTML = plans.map(plan => `
+                    <option value="${plan.id}">${plan.name} - RM ${plan.price}/month</option>
+                `).join('');
+            }
+        }
+        
+        function showAddHawkerModal() {
+            document.getElementById('addHawkerForm').reset();
+            document.getElementById('newStartDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('addHawkerModal').classList.add('show');
+        }
+        
+        function closeAddHawkerModal() {
+            document.getElementById('addHawkerModal').classList.remove('show');
+        }
+        
+        function addHawker(event) {
+            event.preventDefault();
+            
+            const planId = parseInt(document.getElementById('newPlan').value);
+            const plan = plans.find(p => p.id === planId);
+            const startDate = document.getElementById('newStartDate').value;
+            
+            // Calculate end date (30 days from start)
+            const start = new Date(startDate);
+            const end = new Date(start);
+            end.setDate(end.getDate() + 30);
+            
+            const newHawker = {
+                id: Date.now(),
+                type: 'hawker',
+                stallId: document.getElementById('newStallId').value,
+                password: document.getElementById('newPassword').value,
+                name: document.getElementById('newOwnerName').value,
+                stallName: document.getElementById('newStallName').value,
+                email: document.getElementById('newEmail').value,
+                phone: document.getElementById('newPhone').value,
+                subscription: {
+                    planId: plan.id,
+                    planName: plan.name,
+                    startDate: startDate,
+                    endDate: end.toISOString().split('T')[0],
+                    status: 'active',
+                    autoRenew: document.getElementById('newAutoRenew').checked
+                },
+                joinedDate: new Date().toISOString().split('T')[0],
+                status: 'active'
+            };
+            
+            hawkers.push(newHawker);
+            showToast(`${newHawker.stallName} added successfully!`);
+            closeAddHawkerModal();
+            displayHawkers();
+        }
+        
+        function changePlan(event) {
+            event.preventDefault();
+            
+            const hawkerId = parseInt(document.getElementById('hawkerId').value);
+            const planId = parseInt(document.getElementById('planSelect').value);
+            const startDate = document.getElementById('startDate').value;
+            const autoRenew = document.getElementById('autoRenew').checked;
+            
+            const hawker = hawkers.find(h => h.id === hawkerId);
+            const plan = plans.find(p => p.id === planId);
+            
+            if (hawker && plan) {
+                // Calculate end date (30 days from start)
+                const start = new Date(startDate);
+                const end = new Date(start);
+                end.setDate(end.getDate() + 30);
+                
+                hawker.subscription = {
+                    planId: plan.id,
+                    planName: plan.name,
+                    startDate: startDate,
+                    endDate: end.toISOString().split('T')[0],
+                    status: 'active',
+                    autoRenew: autoRenew
+                };
+                
+                hawker.status = 'active';
+                
+                showToast(`Plan updated to ${plan.name} successfully!`);
+                closePlanModal();
+                displayHawkers();
+            }
+        }
+        
+        function deleteHawker(hawkerId) {
+            const hawker = hawkers.find(h => h.id === hawkerId);
+            if (!hawker) return;
+            
+            if (confirm(`Are you sure you want to delete ${hawker.stallName}?\n\nThis action cannot be undone and will remove all their data.`)) {
+                hawkers = hawkers.filter(h => h.id !== hawkerId);
+                showToast(`${hawker.stallName} has been deleted successfully.`);
+                displayHawkers();
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('hawkerModal').classList.remove('show');
+        }
+        
+        function closePlanModal() {
+            document.getElementById('planModal').classList.remove('show');
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

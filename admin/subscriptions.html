@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Plans - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <span>Subscription Plans</span>
+        </div>
+    </nav>
+    
+    <main class="dashboard-content">
+        <div class="plans-grid" id="plansGrid">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading plans...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Floating Add Plan Button -->
+    <button class="fab-button" onclick="showAddPlanModal()" title="Add New Plan" style="bottom: calc(var(--bottom-nav-height) + 1.25rem); right: 1.25rem;">
+        <i class="fas fa-plus"></i>
+    </button>
+    
+    <!-- Edit Plan Modal -->
+    <div class="modal" id="planModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Edit Plan</h2>
+                <button class="modal-close" onclick="closePlanModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="modal-body" id="planForm" onsubmit="savePlan(event)">
+                <input type="hidden" id="planId">
+                
+                <div class="form-group">
+                    <label for="planName">Plan Name *</label>
+                    <input type="text" id="planName" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="planPrice">Price (RM) *</label>
+                        <input type="number" id="planPrice" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="planColor">Color *</label>
+                        <input type="color" id="planColor" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="maxMenuItems">Max Menu Items *</label>
+                        <input type="number" id="maxMenuItems" min="-1" required>
+                        <small>Use -1 for unlimited</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="adsPerMonth">Ads per Month</label>
+                        <input type="number" id="adsPerMonth" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="planFeatures">Features (one per line) *</label>
+                    <textarea id="planFeatures" rows="5" required placeholder="Enter features, one per line"></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closePlanModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> Save Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav admin-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+        <a href="profile.html" class="nav-item">
+            <i class="fas fa-user-circle"></i>
+            <span>Profile</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script>
+        let plans = [];
+        let hawkers = [];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadData();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+        }
+        
+        async function loadData() {
+            try {
+                const [plansResponse, usersResponse] = await Promise.all([
+                    fetch('../data/plans.json'),
+                    fetch('../data/users.json')
+                ]);
+                
+                plans = await plansResponse.json();
+                const users = await usersResponse.json();
+                hawkers = users.filter(u => u.type === 'hawker');
+                
+                displayPlans();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+        
+        function displayPlans() {
+            const container = document.getElementById('plansGrid');
+            
+            container.innerHTML = plans.map(plan => {
+                // Count hawkers on this plan
+                const subscriberCount = hawkers.filter(h => h.subscription?.planId === plan.id).length;
+                
+                return `
+                    <div class="plan-card" style="border-top: 4px solid ${plan.color}">
+                        <div class="plan-header">
+                            <h2 style="color: ${plan.color}">${plan.name}</h2>
+                            <div class="plan-price">
+                                <span class="price">RM ${plan.price}</span>
+                                <span class="period">/ ${plan.duration}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="plan-stats">
+                            <div class="plan-stat">
+                                <i class="fas fa-users"></i>
+                                <span>${subscriberCount} subscribers</span>
+                            </div>
+                        </div>
+                        
+                        <div class="plan-features">
+                            <h4>Features:</h4>
+                            <ul>
+                                ${plan.features.map(feature => `
+                                    <li><i class="fas fa-check"></i> ${feature}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div class="plan-limits">
+                            <div class="limit-item">
+                                <span>Menu Items:</span>
+                                <strong>${plan.maxMenuItems === -1 ? 'Unlimited' : plan.maxMenuItems}</strong>
+                            </div>
+                            ${plan.adsPerMonth ? `
+                                <div class="limit-item">
+                                    <span>Ads per Month:</span>
+                                    <strong>${plan.adsPerMonth}</strong>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="plan-actions">
+                            <button class="btn-icon" onclick="editPlan(${plan.id})" title="Edit Plan">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        let editingPlanId = null;
+        
+        function showAddPlanModal() {
+            editingPlanId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Plan';
+            document.getElementById('planForm').reset();
+            document.getElementById('planId').value = '';
+            document.getElementById('planColor').value = '#3498db';
+            document.getElementById('planModal').classList.add('show');
+        }
+        
+        function editPlan(planId) {
+            const plan = plans.find(p => p.id === planId);
+            if (!plan) return;
+            
+            editingPlanId = planId;
+            document.getElementById('modalTitle').textContent = 'Edit Plan';
+            document.getElementById('planId').value = plan.id;
+            document.getElementById('planName').value = plan.name;
+            document.getElementById('planPrice').value = plan.price;
+            document.getElementById('planColor').value = plan.color;
+            document.getElementById('maxMenuItems').value = plan.maxMenuItems;
+            document.getElementById('adsPerMonth').value = plan.adsPerMonth || 0;
+            document.getElementById('planFeatures').value = plan.features.join('\n');
+            
+            document.getElementById('planModal').classList.add('show');
+        }
+        
+        function savePlan(event) {
+            event.preventDefault();
+            
+            const planData = {
+                id: editingPlanId || Date.now(),
+                name: document.getElementById('planName').value,
+                price: parseFloat(document.getElementById('planPrice').value),
+                duration: 'monthly',
+                color: document.getElementById('planColor').value,
+                maxMenuItems: parseInt(document.getElementById('maxMenuItems').value),
+                adsPerMonth: parseInt(document.getElementById('adsPerMonth').value) || 0,
+                features: document.getElementById('planFeatures').value.split('\n').filter(f => f.trim())
+            };
+            
+            if (editingPlanId) {
+                const index = plans.findIndex(p => p.id === editingPlanId);
+                plans[index] = planData;
+                showToast('Plan updated successfully!');
+            } else {
+                plans.push(planData);
+                showToast('Plan created successfully!');
+            }
+            
+            closePlanModal();
+            displayPlans();
+        }
+        
+        function closePlanModal() {
+            document.getElementById('planModal').classList.remove('show');
+            editingPlanId = null;
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .plan-card {
+            background-color: var(--bg-primary);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .plan-header {
+            text-align: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        .plan-header h2 {
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+        }
+        
+        .plan-price {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+        
+        .price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .period {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        
+        .plan-stats {
+            display: flex;
+            justify-content: center;
+            padding: 1rem 0;
+            margin-bottom: 1.5rem;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+        }
+        
+        .plan-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .plan-stat i {
+            color: var(--primary-color);
+        }
+        
+        .plan-features h4 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .plan-features ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem 0;
+        }
+        
+        .plan-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .plan-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .plan-features i {
+            color: #388E3C;
+        }
+        
+        .plan-limits {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .limit-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+        
+        .limit-item span {
+            color: var(--text-secondary);
+        }
+        
+        .limit-item strong {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+        
+        .plan-actions {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        @media (max-width: 768px) {
+            .plans-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</body>
+</html>
