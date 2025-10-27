@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/customer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="landing-page">
     <div class="container">
@@ -24,9 +26,15 @@
                 <h2>Scan Table QR Code</h2>
                 <p>Each table has a unique QR code to start ordering</p>
                 
-                <!-- Simulated QR Scanner Button for MVP -->
-                <button class="btn-primary btn-large" onclick="simulateScan()">
-                    <i class="fas fa-camera"></i> Start Scanning
+                <!-- Real QR Scanner -->
+                <button class="btn-primary btn-large" onclick="startRealScan()">
+                    <i class="fas fa-camera"></i> Scan QR Code
+                </button>
+                
+                <!-- QR Code Scanner Container (Hidden initially) -->
+                <div id="qr-reader" style="display: none; margin: 1.5rem 0; border-radius: 12px; overflow: hidden;"></div>
+                <button id="stopScanBtn" class="btn-secondary" onclick="stopScan()" style="display: none; margin-top: 1rem;">
+                    <i class="fas fa-times"></i> Stop Scanning
                 </button>
                 
                 <!-- Or select table for testing -->
@@ -95,32 +103,107 @@
     </div>
     
     <script>
-        function simulateScan() {
-            // Simulate QR code scanning
-            // In production, this would use device camera API
-            const tableNumber = Math.floor(Math.random() * 20) + 1;
+        let html5QrcodeScanner = null;
+
+        // Real QR Code Scanner using phone camera
+        function startRealScan() {
+            const qrReader = document.getElementById('qr-reader');
+            const stopBtn = document.getElementById('stopScanBtn');
+            const startBtn = event.target.closest('button');
             
-            // Show loading animation
-            const btn = event.target.closest('button');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning QR Code...';
-            btn.disabled = true;
+            // Show scanner
+            qrReader.style.display = 'block';
+            stopBtn.style.display = 'block';
+            startBtn.style.display = 'none';
             
-            // Simulate scan delay
-            setTimeout(() => {
-                // Store table number
+            // Initialize scanner
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
+            
+            // Start scanning with back camera
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, // Use back camera
+                {
+                    fps: 10,    // Frames per second
+                    qrbox: { width: 250, height: 250 }  // Scanning box size
+                },
+                onScanSuccess,
+                onScanFailure
+            ).catch(err => {
+                console.error("Camera error:", err);
+                alert("❌ Camera access denied or not available. Please:\n\n1. Allow camera permissions\n2. Use HTTPS (required for camera)\n3. Or use the table selector below");
+                stopScan();
+            });
+        }
+
+        // When QR code is successfully scanned
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`QR Code detected: ${decodedText}`);
+            
+            // Stop scanning
+            stopScan();
+            
+            // Extract table number from QR code
+            // Expected format: "https://yoursite.com/table/5" or "table-5" or just "5"
+            let tableNumber = extractTableNumber(decodedText);
+            
+            if (tableNumber) {
+                // Store table info
                 localStorage.setItem('tableNumber', tableNumber);
                 localStorage.setItem('sessionStart', new Date().toISOString());
                 
-                // Success feedback
-                btn.innerHTML = '<i class="fas fa-check"></i> Table ' + tableNumber + ' Detected!';
-                btn.style.background = 'var(--success-color)';
+                // Show success message
+                alert(`✅ Table ${tableNumber} detected! Redirecting...`);
                 
-                // Redirect after short delay
-                setTimeout(() => {
-                    window.location.href = 'customer/home.html';
-                }, 800);
-            }, 1500);
+                // Redirect to menu
+                window.location.href = 'customer/home.html';
+            } else {
+                alert('❌ Invalid QR code. Please scan a valid table QR code.');
+                // Restart scanning
+                setTimeout(() => startRealScan(), 1000);
+            }
+        }
+
+        // Handle scan failures (can be ignored for most cases)
+        function onScanFailure(error) {
+            // This is called frequently while scanning - don't show alerts
+            // console.log(`Scan error: ${error}`);
+        }
+
+        // Extract table number from QR code text
+        function extractTableNumber(qrText) {
+            // Try different patterns
+            // Pattern 1: Direct number (e.g., "5")
+            if (/^\d+$/.test(qrText)) {
+                return qrText;
+            }
+            
+            // Pattern 2: "table-5" or "Table-5"
+            let match = qrText.match(/table[-_\s]*(\d+)/i);
+            if (match) {
+                return match[1];
+            }
+            
+            // Pattern 3: URL like "https://site.com/table/5" or "https://site.com?table=5"
+            match = qrText.match(/table[\/=](\d+)/i);
+            if (match) {
+                return match[1];
+            }
+            
+            // If no pattern matches, return null
+            return null;
+        }
+
+        // Stop the scanner
+        function stopScan() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(ignore => {
+                    document.getElementById('qr-reader').style.display = 'none';
+                    document.getElementById('stopScanBtn').style.display = 'none';
+                    document.querySelector('.btn-primary').style.display = 'inline-flex';
+                }).catch(err => {
+                    console.error("Stop error:", err);
+                });
+            }
         }
         
         function enterWithTable() {

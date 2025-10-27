@@ -150,7 +150,7 @@
                         <div class="cart-items">
                             ${items.map(item => `
                                 <div class="cart-item">
-                                    <img src="${item.image}" alt="${item.name}" class="item-image">
+                                    <img src="${item.image}" alt="${item.name}" class="item-image" loading="lazy">
                                     <div class="item-details">
                                         <h4>${item.name}</h4>
                                         ${item.specialInstructions ? 
