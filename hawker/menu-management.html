@@ -15,9 +15,6 @@
             <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
             <span>Menu Management</span>
         </div>
-        <button class="btn-primary" onclick="showAddItemModal()">
-            <i class="fas fa-plus"></i> Add Item
-        </button>
     </nav>
     
     <main class="dashboard-content">
@@ -29,6 +26,11 @@
             </div>
         </div>
     </main>
+    
+    <!-- Floating Add Button -->
+    <button class="fab-button" onclick="showAddItemModal()" title="Add New Item">
+        <i class="fas fa-plus"></i>
+    </button>
     
     <!-- Add/Edit Item Modal -->
     <div class="modal" id="itemModal">
