@@ -16,12 +16,9 @@
             <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
             <span>Hawker Management</span>
         </div>
-        <div class="filter-tabs">
-            <button class="filter-tab active" onclick="filterHawkers('all')">All</button>
-            <button class="filter-tab" onclick="filterHawkers('active')">Active</button>
-            <button class="filter-tab" onclick="filterHawkers('expiring')">Expiring</button>
-            <button class="filter-tab" onclick="filterHawkers('expired')">Expired</button>
-        </div>
+        <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'" title="Admin Profile">
+            <i class="fas fa-user-circle"></i>
+        </button>
     </nav>
     
     <main class="dashboard-content">
@@ -164,9 +161,9 @@
     </div>
     
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav admin-nav">
+    <nav class="hawker-nav admin-nav">
         <a href="dashboard.html" class="nav-item">
-            <i class="fas fa-home"></i>
+            <i class="fas fa-chart-line"></i>
             <span>Dashboard</span>
         </a>
         <a href="hawkers.html" class="nav-item active">
@@ -176,10 +173,6 @@
         <a href="advertisements.html" class="nav-item">
             <i class="fas fa-bullhorn"></i>
             <span>Ads</span>
-        </a>
-        <a href="profile.html" class="nav-item">
-            <i class="fas fa-user-circle"></i>
-            <span>Profile</span>
         </a>
     </nav>
     

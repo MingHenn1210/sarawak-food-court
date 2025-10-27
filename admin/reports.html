@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Admin Panel</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1>Reports & Analytics</h1>
+        </div>
+        <div class="nav-actions">
+            <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'" title="Admin Profile">
+                <i class="fas fa-user-circle"></i>
+                <span>Admin User</span>
+            </button>
+            <button class="logout-btn-mini" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Report Period Selector -->
+        <div class="filter-section" style="margin-bottom: 1.5rem;">
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterByPeriod('week')">This Week</button>
+                <button class="filter-tab" onclick="filterByPeriod('month')">This Month</button>
+                <button class="filter-tab" onclick="filterByPeriod('year')">This Year</button>
+                <button class="filter-tab" onclick="filterByPeriod('all')">All Time</button>
+            </div>
+        </div>
+
+        <!-- Revenue Summary -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 2rem;">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <p class="stat-label">Total Revenue</p>
+                    <h3 class="stat-value" id="totalRevenue">RM 0</h3>
+                    <span class="stat-change positive">+12.5% from last period</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-info">
+                    <p class="stat-label">Avg Revenue/Hawker</p>
+                    <h3 class="stat-value" id="avgRevenue">RM 0</h3>
+                    <span class="stat-change positive">+8.3% growth</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-info">
+                    <p class="stat-label">New Subscriptions</p>
+                    <h3 class="stat-value" id="newSubs">0</h3>
+                    <span class="stat-change positive">+15 this month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Distribution -->
+        <div class="content-section" style="margin-bottom: 2rem;">
+            <div class="section-header">
+                <h2>Subscription Plan Distribution</h2>
+            </div>
+            <div class="report-chart">
+                <div class="plan-stats-grid">
+                    <div class="plan-stat-card" data-plan="basic">
+                        <div class="plan-stat-header">
+                            <h3>Basic Plan</h3>
+                            <span class="plan-price">RM 99/month</span>
+                        </div>
+                        <div class="plan-stat-body">
+                            <div class="stat-number" id="basicCount">0</div>
+                            <div class="stat-label">Subscribers</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="basicProgress" style="width: 0%; background: linear-gradient(90deg, #4facfe, #00f2fe);"></div>
+                            </div>
+                            <div class="stat-revenue" id="basicRevenue">RM 0</div>
+                        </div>
+                    </div>
+                    <div class="plan-stat-card" data-plan="pro">
+                        <div class="plan-stat-header">
+                            <h3>Pro Plan</h3>
+                            <span class="plan-price">RM 199/month</span>
+                        </div>
+                        <div class="plan-stat-body">
+                            <div class="stat-number" id="proCount">0</div>
+                            <div class="stat-label">Subscribers</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="proProgress" style="width: 0%; background: linear-gradient(90deg, #667eea, #764ba2);"></div>
+                            </div>
+                            <div class="stat-revenue" id="proRevenue">RM 0</div>
+                        </div>
+                    </div>
+                    <div class="plan-stat-card" data-plan="enterprise">
+                        <div class="plan-stat-header">
+                            <h3>Enterprise Plan</h3>
+                            <span class="plan-price">RM 399/month</span>
+                        </div>
+                        <div class="plan-stat-body">
+                            <div class="stat-number" id="enterpriseCount">0</div>
+                            <div class="stat-label">Subscribers</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="enterpriseProgress" style="width: 0%; background: linear-gradient(90deg, #f093fb, #f5576c);"></div>
+                            </div>
+                            <div class="stat-revenue" id="enterpriseRevenue">RM 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hawker Performance -->
+        <div class="content-section">
+            <div class="section-header">
+                <h2>Top Performing Hawkers</h2>
+                <button class="btn-primary" onclick="exportReport()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Hawker Stall</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Join Date</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hawkerPerformanceTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
+                                <p style="margin-top: 1rem;">Loading data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="hawker-nav admin-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="hawkers.html" class="nav-item">
+            <i class="fas fa-store"></i>
+            <span>Hawkers</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+    </nav>
+
+    <script>
+        let users = [];
+        let plans = [];
+        let currentPeriod = 'all';
+
+        // Check authentication
+        function checkAuth() {
+            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+            if (!user.username || user.role !== 'admin') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Load data
+        async function loadReportData() {
+            try {
+                // Load users
+                const usersResponse = await fetch('../data/users.json');
+                users = await usersResponse.json();
+
+                // Load plans
+                const plansResponse = await fetch('../data/plans.json');
+                plans = await plansResponse.json();
+
+                // Calculate and display reports
+                calculateRevenue();
+                calculatePlanDistribution();
+                displayHawkerPerformance();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('hawkerPerformanceTable').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #e74c3c;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem;"></i>
+                            <p style="margin-top: 1rem;">Error loading data. Please refresh the page.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Calculate total revenue
+        function calculateRevenue() {
+            const hawkers = users.filter(u => u.role === 'hawker');
+            const activeHawkers = hawkers.filter(h => h.subscription && h.subscription.status === 'active');
+            
+            let totalRevenue = 0;
+            activeHawkers.forEach(hawker => {
+                const plan = plans.find(p => p.id === hawker.subscription.planId);
+                if (plan) {
+                    totalRevenue += plan.price;
+                }
+            });
+
+            document.getElementById('totalRevenue').textContent = `RM ${totalRevenue.toLocaleString()}`;
+            
+            const avgRevenue = activeHawkers.length > 0 ? totalRevenue / activeHawkers.length : 0;
+            document.getElementById('avgRevenue').textContent = `RM ${avgRevenue.toFixed(2)}`;
+            
+            document.getElementById('newSubs').textContent = activeHawkers.length;
+        }
+
+        // Calculate plan distribution
+        function calculatePlanDistribution() {
+            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            const totalHawkers = hawkers.length;
+
+            plans.forEach(plan => {
+                const planHawkers = hawkers.filter(h => h.subscription.planId === plan.id);
+                const count = planHawkers.length;
+                const percentage = totalHawkers > 0 ? (count / totalHawkers) * 100 : 0;
+                const revenue = count * plan.price;
+
+                const planId = plan.id.toLowerCase();
+                document.getElementById(`${planId}Count`).textContent = count;
+                document.getElementById(`${planId}Progress`).style.width = `${percentage}%`;
+                document.getElementById(`${planId}Revenue`).textContent = `RM ${revenue.toLocaleString()}/month`;
+            });
+        }
+
+        // Display hawker performance
+        function displayHawkerPerformance() {
+            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            
+            // Sort by plan price (higher plans = better performance)
+            hawkers.sort((a, b) => {
+                const planA = plans.find(p => p.id === a.subscription.planId);
+                const planB = plans.find(p => p.id === b.subscription.planId);
+                return (planB?.price || 0) - (planA?.price || 0);
+            });
+
+            const tableBody = document.getElementById('hawkerPerformanceTable');
+            
+            if (hawkers.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 2rem; color: #888;">
+                            <i class="fas fa-inbox" style="font-size: 2rem;"></i>
+                            <p style="margin-top: 1rem;">No hawker data available</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = hawkers.map((hawker, index) => {
+                const plan = plans.find(p => p.id === hawker.subscription.planId);
+                const statusClass = hawker.subscription.status === 'active' ? 'status-active' :
+                                  hawker.subscription.status === 'expiring' ? 'status-expiring' :
+                                  hawker.subscription.status === 'expired' ? 'status-expired' : 'status-suspended';
+                
+                return `
+                    <tr>
+                        <td><strong>#${index + 1}</strong></td>
+                        <td>
+                            <strong>${hawker.stallName}</strong>
+                            <br><small style="color: #888;">${hawker.ownerName}</small>
+                        </td>
+                        <td><span class="badge" style="background: ${plan?.color || '#888'};">${plan?.name || 'N/A'}</span></td>
+                        <td><span class="status-badge ${statusClass}">${hawker.subscription.status}</span></td>
+                        <td>${new Date(hawker.joinedDate).toLocaleDateString()}</td>
+                        <td><strong style="color: #27ae60;">RM ${plan?.price || 0}</strong></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filter by period
+        function filterByPeriod(period) {
+            currentPeriod = period;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // In a real app, you would filter data by date here
+            // For now, we'll just reload the data
+            loadReportData();
+        }
+
+        // Export report
+        function exportReport() {
+            // Create CSV content
+            let csv = 'Rank,Hawker Stall,Owner,Plan,Status,Join Date,Monthly Revenue\n';
+            
+            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            hawkers.sort((a, b) => {
+                const planA = plans.find(p => p.id === a.subscription.planId);
+                const planB = plans.find(p => p.id === b.subscription.planId);
+                return (planB?.price || 0) - (planA?.price || 0);
+            });
+
+            hawkers.forEach((hawker, index) => {
+                const plan = plans.find(p => p.id === hawker.subscription.planId);
+                csv += `${index + 1},"${hawker.stallName}","${hawker.ownerName}","${plan?.name || 'N/A'}","${hawker.subscription.status}","${new Date(hawker.joinedDate).toLocaleDateString()}","RM ${plan?.price || 0}"\n`;
+            });
+
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hawker-report-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Logout
+        function logout() {
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Initialize
+        if (checkAuth()) {
+            loadReportData();
+        }
+    </script>
+
+    <style>
+        .report-chart {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .plan-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .plan-stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .plan-stat-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .plan-stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .plan-stat-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #2c3e50;
+        }
+
+        .plan-price {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .plan-stat-body {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 1s ease;
+        }
+
+        .stat-revenue {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #27ae60;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .data-table thead {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .data-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stat-change {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .stat-change.positive {
+            color: #27ae60;
+        }
+
+        .stat-change.negative {
+            color: #e74c3c;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .plan-stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .data-table {
+                font-size: 0.85rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</body>
+</html>

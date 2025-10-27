@@ -17,9 +17,11 @@
             <span>Admin Panel</span>
         </div>
         <div class="nav-actions">
-            <button class="user-btn" onclick="logout()">
+            <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'">
                 <i class="fas fa-user-circle"></i>
                 <span id="adminName">Admin</span>
+            </button>
+            <button class="logout-btn-mini" onclick="logout()" title="Logout">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </div>
@@ -112,9 +114,9 @@
     </main>
     
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav admin-nav">
+    <nav class="hawker-nav admin-nav">
         <a href="dashboard.html" class="nav-item active">
-            <i class="fas fa-home"></i>
+            <i class="fas fa-chart-line"></i>
             <span>Dashboard</span>
         </a>
         <a href="hawkers.html" class="nav-item">
@@ -124,10 +126,6 @@
         <a href="advertisements.html" class="nav-item">
             <i class="fas fa-bullhorn"></i>
             <span>Ads</span>
-        </a>
-        <a href="profile.html" class="nav-item">
-            <i class="fas fa-user-circle"></i>
-            <span>Profile</span>
         </a>
     </nav>
     

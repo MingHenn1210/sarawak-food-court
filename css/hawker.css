@@ -399,11 +399,16 @@
     text-align: center;
     transition: var(--transition);
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    pointer-events: auto;
 }
 
 .action-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-md);
+    text-decoration: none;
 }
 
 .action-card i {
