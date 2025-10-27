@@ -138,29 +138,42 @@
         // When QR code is successfully scanned
         function onScanSuccess(decodedText, decodedResult) {
             console.log(`QR Code detected: ${decodedText}`);
-            
+
             // Stop scanning
             stopScan();
-            
-            // Extract table number from QR code
-            // Expected format: "https://yoursite.com/table/5" or "table-5" or just "5"
-            let tableNumber = extractTableNumber(decodedText);
-            
+
+            // Try extract stall id first (if QR encodes a specific stall/menu)
+            const stallId = extractStallId(decodedText);
+            // Extract table number as a fallback (if QR encodes the table)
+            const tableNumber = extractTableNumber(decodedText);
+
+            if (stallId) {
+                // If the QR points to a specific stall, store table if present and go straight to that stall menu
+                if (tableNumber) {
+                    localStorage.setItem('tableNumber', tableNumber);
+                }
+                localStorage.setItem('sessionStart', new Date().toISOString());
+                alert(`✅ Opening menu for stall ${stallId}...`);
+                window.location.href = `customer/menu.html?stall=${stallId}`;
+                return;
+            }
+
             if (tableNumber) {
                 // Store table info
                 localStorage.setItem('tableNumber', tableNumber);
                 localStorage.setItem('sessionStart', new Date().toISOString());
-                
+
                 // Show success message
                 alert(`✅ Table ${tableNumber} detected! Redirecting...`);
-                
-                // Redirect to menu
+
+                // Redirect to customer home (list of stalls)
                 window.location.href = 'customer/home.html';
-            } else {
-                alert('❌ Invalid QR code. Please scan a valid table QR code.');
-                // Restart scanning
-                setTimeout(() => startRealScan(), 1000);
+                return;
             }
+
+            // Nothing matched - show error and restart scanner
+            alert('❌ Invalid QR code. Please scan a valid table or stall QR code.');
+            setTimeout(() => startRealScan(), 1000);
         }
 
         // Handle scan failures (can be ignored for most cases)
@@ -190,6 +203,24 @@
             }
             
             // If no pattern matches, return null
+            return null;
+        }
+
+        // Extract stall id from QR code text (if QR encodes a specific stall/menu)
+        function extractStallId(qrText) {
+            if (!qrText) return null;
+
+            // Pattern: "stall-5" or "stall/5" or query param "?stall=5"
+            let match = qrText.match(/stall[-_\/]?(\d+)/i);
+            if (match) return match[1];
+
+            match = qrText.match(/[?&]stall=(\d+)/i);
+            if (match) return match[1];
+
+            // Pattern: URL containing /menu/ or /stall/ followed by id
+            match = qrText.match(/(?:menu|stall)[\/=](\d+)/i);
+            if (match) return match[1];
+
             return null;
         }
 
