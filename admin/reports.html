@@ -13,10 +13,8 @@
     <!-- Top Navigation -->
     <nav class="top-nav">
         <div class="nav-brand">
-            <button class="back-btn" onclick="window.location.href='dashboard.html'">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h1>Reports & Analytics</h1>
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <span>Reports & Analytics</span>
         </div>
         <div class="nav-actions">
             <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'" title="Admin Profile">
@@ -170,6 +168,10 @@
         <a href="hawkers.html" class="nav-item">
             <i class="fas fa-store"></i>
             <span>Hawkers</span>
+        </a>
+        <a href="subscriptions.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Plans</span>
         </a>
         <a href="advertisements.html" class="nav-item">
             <i class="fas fa-bullhorn"></i>
@@ -368,28 +370,6 @@
     </script>
 
     <style>
-        .back-btn {
-            background: rgba(255, 255, 255, 0.95);
-            color: #667eea;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            width: 42px;
-            height: 42px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.1rem;
-        }
-
-        .back-btn:hover {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-color: #667eea;
-            transform: scale(1.05);
-        }
-
         .report-chart {
             background: white;
             border-radius: 16px;
