@@ -184,11 +184,13 @@
 
         // Check authentication
         function checkAuth() {
-            const user = JSON.parse(sessionStorage.getItem('user') || '{}');
-            if (!user.username || user.role !== 'admin') {
+            const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
+            if (!sessionData) {
                 window.location.href = 'login.html';
                 return false;
             }
+            const session = JSON.parse(sessionData);
+            document.querySelector('.admin-user-btn span').textContent = session.name || 'Admin User';
             return true;
         }
 
@@ -222,7 +224,7 @@
 
         // Calculate total revenue
         function calculateRevenue() {
-            const hawkers = users.filter(u => u.role === 'hawker');
+            const hawkers = users.filter(u => u.type === 'hawker');
             const activeHawkers = hawkers.filter(h => h.subscription && h.subscription.status === 'active');
             
             let totalRevenue = 0;
@@ -243,7 +245,7 @@
 
         // Calculate plan distribution
         function calculatePlanDistribution() {
-            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            const hawkers = users.filter(u => u.type === 'hawker' && u.subscription);
             const totalHawkers = hawkers.length;
 
             plans.forEach(plan => {
@@ -261,7 +263,7 @@
 
         // Display hawker performance
         function displayHawkerPerformance() {
-            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            const hawkers = users.filter(u => u.type === 'hawker' && u.subscription);
             
             // Sort by plan price (higher plans = better performance)
             hawkers.sort((a, b) => {
@@ -326,7 +328,7 @@
             // Create CSV content
             let csv = 'Rank,Hawker Stall,Owner,Plan,Status,Join Date,Monthly Revenue\n';
             
-            const hawkers = users.filter(u => u.role === 'hawker' && u.subscription);
+            const hawkers = users.filter(u => u.type === 'hawker' && u.subscription);
             hawkers.sort((a, b) => {
                 const planA = plans.find(p => p.id === a.subscription.planId);
                 const planB = plans.find(p => p.id === b.subscription.planId);
@@ -352,9 +354,11 @@
 
         // Logout
         function logout() {
-            sessionStorage.removeItem('user');
-            localStorage.removeItem('user');
-            window.location.href = 'login.html';
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminSession');
+                sessionStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
         }
 
         // Initialize
