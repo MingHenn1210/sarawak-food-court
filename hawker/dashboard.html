@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Hawker Portal</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="hawker-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-store-alt"></i>
+            <span id="stallName">Loading...</span>
+        </div>
+        <div class="nav-actions">
+            <div class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="userName">Hawker</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon pending">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="pendingOrders">0</h3>
+                    <p>Pending Orders</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon preparing">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="preparingOrders">0</h3>
+                    <p>Preparing</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon completed">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="completedToday">0</h3>
+                    <p>Completed Today</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="todayRevenue">RM 0.00</h3>
+                    <p>Today's Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Orders -->
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-receipt"></i> Recent Orders</h2>
+                <a href="orders.html" class="btn-secondary">View All</a>
+            </div>
+            <div class="orders-list" id="recentOrders">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading orders...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <a href="menu-management.html" class="action-card">
+                    <i class="fas fa-utensils"></i>
+                    <h3>Manage Menu</h3>
+                    <p>Add, edit, or remove items</p>
+                </a>
+                <a href="orders.html" class="action-card">
+                    <i class="fas fa-list-alt"></i>
+                    <h3>View Orders</h3>
+                    <p>See all orders and update status</p>
+                </a>
+                <a href="settings.html" class="action-card">
+                    <i class="fas fa-qrcode"></i>
+                    <h3>Payment QR</h3>
+                    <p>Update payment QR code</p>
+                </a>
+                <a href="settings.html" class="action-card">
+                    <i class="fas fa-cog"></i>
+                    <h3>Stall Settings</h3>
+                    <p>Configure stall information</p>
+                </a>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav hawker-nav">
+        <a href="dashboard.html" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="orders.html" class="nav-item">
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
+            <span class="nav-badge" id="ordersBadge">0</span>
+        </a>
+        <a href="menu-management.html" class="nav-item">
+            <i class="fas fa-utensils"></i>
+            <span>Menu</span>
+        </a>
+        <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/hawker.js"></script>
+    <script>
+        let session = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadDashboard();
+            
+            // Refresh every 30 seconds
+            setInterval(loadDashboard, 30000);
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            session = JSON.parse(sessionData);
+            document.getElementById('stallName').textContent = session.stallName;
+            document.getElementById('userName').textContent = session.name;
+        }
+        
+        async function loadDashboard() {
+            try {
+                // Load all orders
+                const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+                
+                // Filter orders for this stall
+                const myOrders = orders.filter(order => 
+                    order.stallOrders.some(so => so.stallName === session.stallName)
+                );
+                
+                // Calculate stats
+                const today = new Date().toDateString();
+                const todayOrders = myOrders.filter(o => 
+                    new Date(o.timestamp).toDateString() === today
+                );
+                
+                // Count by status
+                const pending = todayOrders.filter(o => {
+                    const stallStatus = o.stallStatuses?.[session.stallName] || 'pending';
+                    return stallStatus === 'pending';
+                }).length;
+                
+                const preparing = todayOrders.filter(o => {
+                    const stallStatus = o.stallStatuses?.[session.stallName] || 'pending';
+                    return stallStatus === 'preparing';
+                }).length;
+                
+                const completed = todayOrders.filter(o => {
+                    const stallStatus = o.stallStatuses?.[session.stallName] || 'pending';
+                    return stallStatus === 'completed';
+                }).length;
+                
+                // Calculate revenue
+                const revenue = todayOrders.reduce((sum, order) => {
+                    const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
+                    return sum + (stallOrder?.total || 0);
+                }, 0);
+                
+                // Update stats
+                document.getElementById('pendingOrders').textContent = pending;
+                document.getElementById('preparingOrders').textContent = preparing;
+                document.getElementById('completedToday').textContent = completed;
+                document.getElementById('todayRevenue').textContent = `RM ${revenue.toFixed(2)}`;
+                document.getElementById('ordersBadge').textContent = pending + preparing;
+                
+                // Display recent orders
+                displayRecentOrders(myOrders.slice(0, 5));
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        function displayRecentOrders(orders) {
+            const container = document.getElementById('recentOrders');
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <p>No orders yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = orders.map(order => {
+                const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
+                const status = order.stallStatuses?.[session.stallName] || 'pending';
+                
+                return `
+                    <div class="order-card" onclick="window.location.href='orders.html?order=${order.orderId}'">
+                        <div class="order-header">
+                            <div class="order-id">
+                                <strong>${order.orderId}</strong>
+                                <span>Table ${order.tableNumber}</span>
+                            </div>
+                            <span class="status-badge status-${status}">
+                                ${formatStatus(status)}
+                            </span>
+                        </div>
+                        <div class="order-items-preview">
+                            ${stallOrder.items.map(item => 
+                                `<span>${item.name} × ${item.quantity}</span>`
+                            ).join('')}
+                        </div>
+                        <div class="order-footer">
+                            <span class="order-time">${formatTime(order.timestamp)}</span>
+                            <strong>RM ${stallOrder.total.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function formatStatus(status) {
+            const labels = {
+                pending: 'Pending',
+                preparing: 'Preparing',
+                ready: 'Ready',
+                completed: 'Completed'
+            };
+            return labels[status] || status;
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return `${minutes} min ago`;
+            
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            
+            return date.toLocaleDateString();
+        }
+        
+        function toggleUserMenu() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('hawkerSession');
+                sessionStorage.removeItem('hawkerSession');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

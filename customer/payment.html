@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <a href="cart.html" class="back-button">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Payment</h1>
+            <div></div>
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <!-- Payment Instructions -->
+        <div class="payment-instructions">
+            <div class="instruction-card">
+                <i class="fas fa-info-circle"></i>
+                <p>Please scan the QR code for each stall separately to complete your payment</p>
+            </div>
+        </div>
+        
+        <!-- Payment by Stall -->
+        <div class="payment-container" id="paymentContainer">
+            <!-- Will be populated dynamically -->
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="payment-summary">
+            <h3>Order Summary</h3>
+            <div class="summary-details">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <strong id="subtotal">RM 0.00</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Service Charge (6%)</span>
+                    <span id="serviceCharge">RM 0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total Amount</span>
+                    <strong id="total">RM 0.00</strong>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Info -->
+        <div class="table-info-card">
+            <i class="fas fa-chair"></i>
+            <span>Table Number: <strong id="tableNumber">-</strong></span>
+        </div>
+        
+        <!-- Confirm Button -->
+        <div class="payment-actions">
+            <button class="btn-primary btn-large" onclick="confirmPayment()">
+                <i class="fas fa-check-circle"></i> Confirm Payment & Place Order
+            </button>
+            <p class="payment-note">
+                <i class="fas fa-shield-alt"></i> 
+                By confirming, you agree that you have completed payment for all stalls
+            </p>
+        </div>
+    </main>
+    
+    <!-- QR Code Modal -->
+    <div class="modal" id="qrModal">
+        <div class="modal-content qr-modal-content">
+            <div class="modal-header">
+                <h2 id="qrStallName">Stall Payment</h2>
+                <button class="modal-close" onclick="closeQRModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="qr-code-display">
+                    <img id="qrCodeImage" src="" alt="QR Code">
+                </div>
+                <div class="qr-info">
+                    <h3 id="qrAmount">RM 0.00</h3>
+                    <p>Scan this QR code with your payment app</p>
+                    <div class="payment-apps">
+                        <span><i class="fas fa-mobile-alt"></i> Touch 'n Go</span>
+                        <span><i class="fas fa-wallet"></i> GrabPay</span>
+                        <span><i class="fas fa-credit-card"></i> Boost</span>
+                    </div>
+                </div>
+                <div class="payment-status" id="paymentStatus">
+                    <label>
+                        <input type="checkbox" id="paymentConfirm" onchange="togglePaymentButton()">
+                        I have completed the payment
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary btn-large" id="markPaidBtn" onclick="markAsPaid()" disabled>
+                    <i class="fas fa-check"></i> Mark as Paid
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/app.js"></script>
+    <script>
+        let paymentsByStall = {};
+        let currentStallPayment = null;
+        let paidStalls = new Set();
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const table = localStorage.getItem('tableNumber') || '1';
+            document.getElementById('tableNumber').textContent = table;
+            
+            await loadPaymentData();
+            displayPaymentOptions();
+            updateSummary();
+        });
+        
+        async function loadPaymentData() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            // Group by stall
+            paymentsByStall = cart.reduce((acc, item) => {
+                const stallName = item.stallName || 'Unknown Stall';
+                if (!acc[stallName]) {
+                    acc[stallName] = {
+                        stallId: item.stallId,
+                        stallName: stallName,
+                        items: [],
+                        total: 0
+                    };
+                }
+                acc[stallName].items.push(item);
+                acc[stallName].total += item.price * item.quantity;
+                return acc;
+            }, {});
+            
+            // Load stall QR codes
+            try {
+                const response = await fetch('../data/stalls.json');
+                const stalls = await response.json();
+                
+                Object.keys(paymentsByStall).forEach(stallName => {
+                    const stall = stalls.find(s => s.name === stallName);
+                    if (stall) {
+                        paymentsByStall[stallName].qrCode = stall.qrCode;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading stall data:', error);
+            }
+        }
+        
+        function displayPaymentOptions() {
+            const container = document.getElementById('paymentContainer');
+            
+            container.innerHTML = Object.values(paymentsByStall).map((stall, index) => `
+                <div class="payment-stall-card" id="stall-${index}">
+                    <div class="stall-payment-header">
+                        <div class="stall-info">
+                            <h3><i class="fas fa-store"></i> ${stall.stallName}</h3>
+                            <p>${stall.items.length} item(s)</p>
+                        </div>
+                        <div class="stall-amount">
+                            <strong>RM ${stall.total.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                    <div class="payment-items">
+                        ${stall.items.map(item => `
+                            <div class="payment-item">
+                                <span>${item.name} × ${item.quantity}</span>
+                                <span>RM ${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn-payment ${paidStalls.has(index) ? 'paid' : ''}" 
+                            onclick="showQRCode(${index})"
+                            id="payBtn-${index}">
+                        ${paidStalls.has(index) ? 
+                            '<i class="fas fa-check-circle"></i> Paid' : 
+                            '<i class="fas fa-qrcode"></i> Pay Now'}
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        function showQRCode(stallIndex) {
+            if (paidStalls.has(stallIndex)) {
+                return; // Already paid
+            }
+            
+            const stalls = Object.values(paymentsByStall);
+            currentStallPayment = { index: stallIndex, ...stalls[stallIndex] };
+            
+            document.getElementById('qrStallName').textContent = currentStallPayment.stallName;
+            document.getElementById('qrAmount').textContent = `RM ${currentStallPayment.total.toFixed(2)}`;
+            document.getElementById('qrCodeImage').src = currentStallPayment.qrCode || '../assets/images/qr-codes/default-qr.png';
+            document.getElementById('paymentConfirm').checked = false;
+            document.getElementById('markPaidBtn').disabled = true;
+            
+            document.getElementById('qrModal').classList.add('show');
+        }
+        
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('show');
+            currentStallPayment = null;
+        }
+        
+        function togglePaymentButton() {
+            const checked = document.getElementById('paymentConfirm').checked;
+            document.getElementById('markPaidBtn').disabled = !checked;
+        }
+        
+        function markAsPaid() {
+            if (!currentStallPayment) return;
+            
+            paidStalls.add(currentStallPayment.index);
+            
+            // Update button
+            const btn = document.getElementById(`payBtn-${currentStallPayment.index}`);
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Paid';
+            btn.classList.add('paid');
+            btn.disabled = true;
+            
+            // Update card
+            const card = document.getElementById(`stall-${currentStallPayment.index}`);
+            card.classList.add('paid');
+            
+            closeQRModal();
+            showToast(`Payment confirmed for ${currentStallPayment.stallName}`);
+            
+            // Check if all paid
+            if (paidStalls.size === Object.keys(paymentsByStall).length) {
+                showToast('All payments completed! You can now place your order.');
+            }
+        }
+        
+        function updateSummary() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const serviceCharge = subtotal * 0.06;
+            const total = subtotal + serviceCharge;
+            
+            document.getElementById('subtotal').textContent = `RM ${subtotal.toFixed(2)}`;
+            document.getElementById('serviceCharge').textContent = `RM ${serviceCharge.toFixed(2)}`;
+            document.getElementById('total').textContent = `RM ${total.toFixed(2)}`;
+        }
+        
+        function confirmPayment() {
+            // Check if all stalls are paid
+            if (paidStalls.size !== Object.keys(paymentsByStall).length) {
+                alert('Please complete payment for all stalls before placing your order.');
+                return;
+            }
+            
+            // Create order
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const table = localStorage.getItem('tableNumber') || '1';
+            
+            const order = {
+                orderId: 'ORD' + Date.now(),
+                tableNumber: table,
+                items: cart,
+                subtotal: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                serviceCharge: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 0.06,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 1.06,
+                status: 'pending',
+                timestamp: new Date().toISOString(),
+                stallOrders: Object.values(paymentsByStall)
+            };
+            
+            // Save order
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            orders.push(order);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('currentOrder', JSON.stringify(order));
+            
+            // Clear cart
+            localStorage.setItem('cart', '[]');
+            
+            // Redirect to tracking
+            window.location.href = 'order-tracking.html?order=' + order.orderId;
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

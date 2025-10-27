@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Hawker Portal</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="hawker-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <span>Orders Management</span>
+        </div>
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterOrders('all')">All</button>
+            <button class="filter-tab" onclick="filterOrders('pending')">Pending</button>
+            <button class="filter-tab" onclick="filterOrders('preparing')">Preparing</button>
+            <button class="filter-tab" onclick="filterOrders('ready')">Ready</button>
+        </div>
+    </nav>
+    
+    <main class="dashboard-content">
+        <div class="orders-container" id="ordersContainer">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading orders...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav hawker-nav">
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="orders.html" class="nav-item active">
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
+        </a>
+        <a href="menu-management.html" class="nav-item">
+            <i class="fas fa-utensils"></i>
+            <span>Menu</span>
+        </a>
+        <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/orders.js"></script>
+    <script>
+        let session = null;
+        let allOrders = [];
+        let currentFilter = 'all';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadOrders();
+            
+            // Auto-refresh every 15 seconds
+            setInterval(loadOrders, 15000);
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            session = JSON.parse(sessionData);
+        }
+        
+        function loadOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            
+            // Filter orders for this stall
+            allOrders = orders.filter(order => 
+                order.stallOrders.some(so => so.stallName === session.stallName)
+            ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            displayOrders();
+        }
+        
+        function filterOrders(filter) {
+            currentFilter = filter;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            displayOrders();
+        }
+        
+        function displayOrders() {
+            const container = document.getElementById('ordersContainer');
+            
+            let filteredOrders = allOrders;
+            if (currentFilter !== 'all') {
+                filteredOrders = allOrders.filter(order => {
+                    const status = order.stallStatuses?.[session.stallName] || 'pending';
+                    return status === currentFilter;
+                });
+            }
+            
+            if (filteredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-receipt"></i>
+                        <p>No ${currentFilter === 'all' ? '' : currentFilter} orders</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredOrders.map(order => {
+                const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
+                const status = order.stallStatuses?.[session.stallName] || 'pending';
+                
+                return `
+                    <div class="order-detail-card">
+                        <div class="order-card-header">
+                            <div>
+                                <h3>${order.orderId}</h3>
+                                <span class="order-time"><i class="fas fa-clock"></i> ${formatTime(order.timestamp)}</span>
+                            </div>
+                            <div class="order-table">
+                                <i class="fas fa-chair"></i> Table ${order.tableNumber}
+                            </div>
+                        </div>
+                        
+                        <div class="order-items-list">
+                            ${stallOrder.items.map(item => `
+                                <div class="order-item-row">
+                                    <div class="item-info">
+                                        <strong>${item.name}</strong> × ${item.quantity}
+                                        ${item.specialInstructions ? 
+                                            `<p class="item-note"><i class="fas fa-comment"></i> ${item.specialInstructions}</p>` 
+                                            : ''}
+                                    </div>
+                                    <span>RM ${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="order-card-footer">
+                            <div class="order-total">
+                                <strong>Total: RM ${stallOrder.total.toFixed(2)}</strong>
+                            </div>
+                            <div class="order-status-actions">
+                                <span class="status-badge status-${status}">${formatStatus(status)}</span>
+                                ${status !== 'completed' ? `
+                                    <button class="btn-primary btn-sm" onclick="updateOrderStatus('${order.orderId}', '${getNextStatus(status)}')">
+                                        <i class="fas fa-arrow-right"></i> ${getNextStatusLabel(status)}
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateOrderStatus(orderId, newStatus) {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            const order = orders.find(o => o.orderId === orderId);
+            
+            if (order) {
+                if (!order.stallStatuses) {
+                    order.stallStatuses = {};
+                }
+                order.stallStatuses[session.stallName] = newStatus;
+                
+                localStorage.setItem('orders', JSON.stringify(orders));
+                
+                // Update current order if it's the active one
+                const currentOrder = JSON.parse(localStorage.getItem('currentOrder') || 'null');
+                if (currentOrder && currentOrder.orderId === orderId) {
+                    currentOrder.stallStatuses = order.stallStatuses;
+                    localStorage.setItem('currentOrder', JSON.stringify(currentOrder));
+                }
+                
+                loadOrders();
+                showToast(`Order status updated to ${formatStatus(newStatus)}`);
+            }
+        }
+        
+        function getNextStatus(currentStatus) {
+            const flow = {
+                'pending': 'preparing',
+                'preparing': 'ready',
+                'ready': 'completed'
+            };
+            return flow[currentStatus] || 'completed';
+        }
+        
+        function getNextStatusLabel(currentStatus) {
+            const labels = {
+                'pending': 'Start Preparing',
+                'preparing': 'Mark Ready',
+                'ready': 'Complete'
+            };
+            return labels[currentStatus] || 'Update';
+        }
+        
+        function formatStatus(status) {
+            const labels = {
+                pending: 'Pending',
+                preparing: 'Preparing',
+                ready: 'Ready',
+                completed: 'Completed'
+            };
+            return labels[status] || status;
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

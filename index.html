@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sarawak Food Court - Welcome</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="landing-page">
+    <div class="container">
+        <div class="welcome-section">
+            <div class="logo">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <h1>Welcome to Sarawak Food Court</h1>
+            <p class="tagline">Order from multiple stalls, one easy checkout</p>
+            
+            <div class="qr-scanner-section">
+                <div class="qr-icon">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <h2>Scan Table QR Code</h2>
+                <p>Each table has a unique QR code to start ordering</p>
+                
+                <!-- Simulated QR Scanner Button for MVP -->
+                <button class="btn-primary btn-large" onclick="simulateScan()">
+                    <i class="fas fa-camera"></i> Start Scanning
+                </button>
+                
+                <!-- Or select table for testing -->
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label for="tableSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
+                        <i class="fas fa-table"></i> Select Your Table (Testing):
+                    </label>
+                    <select id="tableSelect" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: var(--border-radius); font-size: 1rem; background-color: white;">
+                        <option value="">Choose a table number...</option>
+                        <option value="1">Table 1</option>
+                        <option value="2">Table 2</option>
+                        <option value="3">Table 3</option>
+                        <option value="4">Table 4</option>
+                        <option value="5">Table 5</option>
+                        <option value="6">Table 6</option>
+                        <option value="7">Table 7</option>
+                        <option value="8">Table 8</option>
+                        <option value="9">Table 9</option>
+                        <option value="10">Table 10</option>
+                        <option value="11">Table 11</option>
+                        <option value="12">Table 12</option>
+                        <option value="13">Table 13</option>
+                        <option value="14">Table 14</option>
+                        <option value="15">Table 15</option>
+                        <option value="16">Table 16</option>
+                        <option value="17">Table 17</option>
+                        <option value="18">Table 18</option>
+                        <option value="19">Table 19</option>
+                        <option value="20">Table 20</option>
+                    </select>
+                </div>
+                
+                <button class="btn-secondary btn-large" onclick="enterWithTable()">
+                    <i class="fas fa-arrow-right"></i> Enter with Selected Table
+                </button>
+            </div>
+            
+            <div class="info-cards">
+                <div class="info-card">
+                    <i class="fas fa-store"></i>
+                    <h3>Multiple Stalls</h3>
+                    <p>Order from different food stalls in one go</p>
+                </div>
+                <div class="info-card">
+                    <i class="fas fa-mobile-alt"></i>
+                    <h3>Easy Payment</h3>
+                    <p>Quick QR code payment for each stall</p>
+                </div>
+                <div class="info-card">
+                    <i class="fas fa-bell"></i>
+                    <h3>Real-time Updates</h3>
+                    <p>Track your order status live</p>
+                </div>
+            </div>
+            
+            <div class="footer-links">
+                <a href="hawker/login.html">Hawker Login</a>
+                <span>|</span>
+                <a href="admin/login.html">Admin</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function simulateScan() {
+            // Simulate QR code scanning
+            // In production, this would use device camera API
+            const tableNumber = Math.floor(Math.random() * 20) + 1;
+            
+            // Show loading animation
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning QR Code...';
+            btn.disabled = true;
+            
+            // Simulate scan delay
+            setTimeout(() => {
+                // Store table number
+                localStorage.setItem('tableNumber', tableNumber);
+                localStorage.setItem('sessionStart', new Date().toISOString());
+                
+                // Success feedback
+                btn.innerHTML = '<i class="fas fa-check"></i> Table ' + tableNumber + ' Detected!';
+                btn.style.background = 'var(--success-color)';
+                
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = 'customer/home.html';
+                }, 800);
+            }, 1500);
+        }
+        
+        function enterWithTable() {
+            const tableSelect = document.getElementById('tableSelect');
+            const tableNumber = tableSelect.value;
+            
+            if (!tableNumber) {
+                alert('⚠️ Please select a table number first');
+                tableSelect.focus();
+                return;
+            }
+            
+            // Store table info
+            localStorage.setItem('tableNumber', tableNumber);
+            localStorage.setItem('sessionStart', new Date().toISOString());
+            
+            // Visual feedback
+            const btn = event.target.closest('button');
+            btn.innerHTML = '<i class="fas fa-check"></i> Table ' + tableNumber + ' Selected!';
+            btn.style.background = 'var(--success-color)';
+            btn.disabled = true;
+            
+            // Redirect
+            setTimeout(() => {
+                window.location.href = 'customer/home.html';
+            }, 500);
+        }
+        
+        // Auto-submit on Enter key
+        window.addEventListener('DOMContentLoaded', () => {
+            const tableSelect = document.getElementById('tableSelect');
+            
+            if (tableSelect) {
+                tableSelect.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && tableSelect.value) {
+                        enterWithTable();
+                    }
+                });
+                
+                // Highlight button when table selected
+                tableSelect.addEventListener('change', () => {
+                    if (tableSelect.value) {
+                        const btn = document.querySelector('.btn-secondary');
+                        btn.style.animation = 'pulse 0.5s';
+                        setTimeout(() => {
+                            btn.style.animation = '';
+                        }, 500);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

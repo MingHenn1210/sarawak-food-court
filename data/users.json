@@ -1,0 +1,60 @@
+[
+  {
+    "id": 1,
+    "type": "hawker",
+    "stallId": "stall1",
+    "password": "demo123",
+    "name": "Ahmad Rahman",
+    "stallName": "Nasi Lemak Corner",
+    "email": "ahmad@nasilemak.com",
+    "phone": "+60123456789"
+  },
+  {
+    "id": 2,
+    "type": "hawker",
+    "stallId": "stall2",
+    "password": "demo123",
+    "name": "Siti Wong",
+    "stallName": "Laksa House",
+    "email": "siti@laksahouse.com",
+    "phone": "+60123456790"
+  },
+  {
+    "id": 3,
+    "type": "hawker",
+    "stallId": "stall3",
+    "password": "demo123",
+    "name": "David Tan",
+    "stallName": "Western Grill",
+    "email": "david@westerngrill.com",
+    "phone": "+60123456791"
+  },
+  {
+    "id": 4,
+    "type": "hawker",
+    "stallId": "stall4",
+    "password": "demo123",
+    "name": "Lina Chen",
+    "stallName": "Kolo Mee Specialist",
+    "email": "lina@kolomee.com",
+    "phone": "+60123456792"
+  },
+  {
+    "id": 5,
+    "type": "hawker",
+    "stallId": "stall5",
+    "password": "demo123",
+    "name": "Raj Kumar",
+    "stallName": "Fresh Drinks Bar",
+    "email": "raj@freshdrinks.com",
+    "phone": "+60123456793"
+  },
+  {
+    "id": 10,
+    "type": "admin",
+    "username": "admin",
+    "password": "admin123",
+    "name": "Admin User",
+    "email": "admin@sarawakhub.com"
+  }
+]

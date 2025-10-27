@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Stalls - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="table-info">
+                <i class="fas fa-chair"></i>
+                <span>Table <strong id="tableNumber">-</strong></span>
+            </div>
+            <h1>Food Stalls</h1>
+            <a href="cart.html" class="cart-icon">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="cart-badge" id="cartCount">0</span>
+            </a>
+        </div>
+    </header>
+    
+    <!-- Advertisement Banner -->
+    <div class="ad-banner" id="adBanner">
+        <div class="ad-content">
+            <i class="fas fa-gift"></i>
+            <span>🎉 Special Offer! Get 10% off on orders above RM30!</span>
+        </div>
+    </div>
+    
+    <!-- Search and Filter -->
+    <div class="search-section">
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search food stalls..." oninput="filterStalls()">
+        </div>
+        <div class="filter-chips">
+            <button class="filter-chip active" onclick="filterByCategory('all')">All</button>
+            <button class="filter-chip" onclick="filterByCategory('asian')">Asian</button>
+            <button class="filter-chip" onclick="filterByCategory('western')">Western</button>
+            <button class="filter-chip" onclick="filterByCategory('drinks')">Drinks</button>
+            <button class="filter-chip" onclick="filterByCategory('dessert')">Dessert</button>
+        </div>
+    </div>
+    
+    <!-- Food Stalls Grid -->
+    <main class="main-content">
+        <div class="stalls-grid" id="stallsGrid">
+            <!-- Stalls will be loaded dynamically -->
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading stalls...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="cart.html" class="nav-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Cart</span>
+            <span class="nav-badge" id="cartCountNav">0</span>
+        </a>
+        <a href="order-tracking.html" class="nav-item">
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/customer.js"></script>
+    <script>
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get table number from URL or localStorage
+            const urlParams = new URLSearchParams(window.location.search);
+            const table = urlParams.get('table') || localStorage.getItem('tableNumber') || '1';
+            localStorage.setItem('tableNumber', table);
+            document.getElementById('tableNumber').textContent = table;
+            
+            // Update cart count
+            updateCartCount();
+            
+            // Load stalls
+            loadStalls();
+        });
+        
+        let currentCategory = 'all';
+        
+        async function loadStalls() {
+            try {
+                const response = await fetch('../data/stalls.json');
+                const stalls = await response.json();
+                displayStalls(stalls);
+            } catch (error) {
+                console.error('Error loading stalls:', error);
+                document.getElementById('stallsGrid').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Unable to load stalls. Please refresh the page.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayStalls(stalls) {
+            const grid = document.getElementById('stallsGrid');
+            
+            if (stalls.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-store-slash"></i>
+                        <p>No stalls available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = stalls.map(stall => `
+                <div class="stall-card" data-category="${stall.category}">
+                    <div class="stall-image" style="background-image: url('${stall.image}')">
+                        ${!stall.isOpen ? '<div class="closed-badge">Closed</div>' : ''}
+                        ${stall.rating ? `
+                            <div class="rating-badge">
+                                <i class="fas fa-star"></i> ${stall.rating}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="stall-info">
+                        <h3>${stall.name}</h3>
+                        <p class="stall-description">${stall.description}</p>
+                        <div class="stall-meta">
+                            <span class="stall-category">
+                                <i class="fas fa-tag"></i> ${stall.category}
+                            </span>
+                            <span class="stall-items">
+                                ${stall.itemCount} items
+                            </span>
+                        </div>
+                        <button class="btn-primary ${!stall.isOpen ? 'disabled' : ''}" 
+                                onclick="viewMenu(${stall.id})" 
+                                ${!stall.isOpen ? 'disabled' : ''}>
+                            <i class="fas fa-utensils"></i> View Menu
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function filterByCategory(category) {
+            currentCategory = category;
+            
+            // Update active filter chip
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter stalls
+            const stalls = document.querySelectorAll('.stall-card');
+            stalls.forEach(stall => {
+                if (category === 'all' || stall.dataset.category === category) {
+                    stall.style.display = 'block';
+                } else {
+                    stall.style.display = 'none';
+                }
+            });
+        }
+        
+        function filterStalls() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const stalls = document.querySelectorAll('.stall-card');
+            
+            stalls.forEach(stall => {
+                const name = stall.querySelector('h3').textContent.toLowerCase();
+                const description = stall.querySelector('.stall-description').textContent.toLowerCase();
+                
+                if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                    stall.style.display = 'block';
+                } else {
+                    stall.style.display = 'none';
+                }
+            });
+        }
+        
+        function viewMenu(stallId) {
+            window.location.href = `menu.html?stall=${stallId}`;
+        }
+        
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+            document.getElementById('cartCountNav').textContent = count;
+            
+            if (count > 0) {
+                document.querySelector('.cart-icon').classList.add('has-items');
+            }
+        }
+    </script>
+</body>
+</html>
