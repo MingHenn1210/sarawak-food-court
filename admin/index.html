@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Control Center - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .grid-item {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .grid-item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .module-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .module-header i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #4a90e2;
+        }
+        
+        .module-header h3 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .module-content {
+            margin-bottom: 15px;
+        }
+        
+        .module-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        
+        .status-indicator.active {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .status-indicator.warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .status-indicator i {
+            margin-right: 5px;
+        }
+        
+        .action-btn {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            background: #357abd;
+        }
+        
+        .stats-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-utensils"></i>
+            <span>Admin Control Center</span>
+        </div>
+        <div class="nav-actions">
+            <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'">
+                <i class="fas fa-user-circle"></i>
+                <span id="adminName">Admin</span>
+            </button>
+            <button class="logout-btn-mini" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Summary Stats -->
+        <div class="stats-summary">
+            <div class="stat-item">
+                <div class="stat-value" id="totalFoodCourts">0</div>
+                <div class="stat-label">Food Courts</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalHawkers">0</div>
+                <div class="stat-label">Hawkers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="activeSubscriptions">0</div>
+                <div class="stat-label">Active Subscriptions</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="totalRevenue">RM 0</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+        </div>
+
+        <!-- Modules Grid -->
+        <div class="grid-container">
+            <!-- Food Courts Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-building"></i>
+                    <h3>Food Courts Management</h3>
+                </div>
+                <div class="module-content">
+                    <p>Manage food courts and their associated hawkers. Monitor occupancy and facilities.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator active">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="activeFoodCourts">0 Active</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='food-courts.html'">
+                        Manage <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hawkers Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-building"></i>
+                    <h3>Food Courts & Hawkers</h3>
+                </div>
+                <div class="module-content">
+                    <p>Manage food courts and their associated hawkers in one place.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator warning">
+                        <i class="fas fa-store"></i>
+                        <span id="pendingApplications">0 Hawkers</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='food-courts.html'">
+                        Manage <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Subscriptions Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-credit-card"></i>
+                    <h3>Subscription Plans</h3>
+                </div>
+                <div class="module-content">
+                    <p>Manage subscription plans and monitor active subscriptions.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator active">
+                        <i class="fas fa-sync"></i>
+                        <span id="activePlans">0 Plans</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='subscriptions.html'">
+                        Manage <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Advertisements Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-ad"></i>
+                    <h3>Advertisements</h3>
+                </div>
+                <div class="module-content">
+                    <p>Manage promotional content and advertisement placements.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator active">
+                        <i class="fas fa-bullhorn"></i>
+                        <span id="activeAds">0 Active</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='advertisements.html'">
+                        Manage <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reports Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Analytics & Reports</h3>
+                </div>
+                <div class="module-content">
+                    <p>View system analytics, revenue reports, and usage statistics.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator active">
+                        <i class="fas fa-file-alt"></i>
+                        <span id="reportCount">0 Reports</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='reports.html'">
+                        View <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Settings Module -->
+            <div class="grid-item">
+                <div class="module-header">
+                    <i class="fas fa-cog"></i>
+                    <h3>System Settings</h3>
+                </div>
+                <div class="module-content">
+                    <p>Configure system settings and manage administrator accounts.</p>
+                </div>
+                <div class="module-footer">
+                    <span class="status-indicator active">
+                        <i class="fas fa-user-shield"></i>
+                        <span id="adminCount">0 Admins</span>
+                    </span>
+                    <button class="action-btn" onclick="window.location.href='profile.html'">
+                        Configure <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadDashboardData();
+        });
+
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
+            if (!sessionData) {
+                // Allow viewing the dashboard without authentication for monitoring
+                document.getElementById('adminName').textContent = 'Guest';
+                return;
+            }
+            const session = JSON.parse(sessionData);
+            document.getElementById('adminName').textContent = session.name;
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load Food Courts
+                const foodCourtsResponse = await fetch('../data/food-courts.json');
+                const foodCourts = (await foodCourtsResponse.json()).food_courts;
+                document.getElementById('totalFoodCourts').textContent = foodCourts.length;
+                document.getElementById('activeFoodCourts').textContent = `${foodCourts.length} Active`;
+
+                // Load Users/Hawkers
+                const usersResponse = await fetch('../data/users.json');
+                const users = await usersResponse.json();
+                const hawkers = users.filter(u => u.type === 'hawker');
+                document.getElementById('totalHawkers').textContent = hawkers.length;
+
+                // Load Subscriptions
+                const activeHawkers = hawkers.filter(h => h.subscription?.status === 'active');
+                document.getElementById('activeSubscriptions').textContent = activeHawkers.length;
+
+                // Load Plans
+                const plansResponse = await fetch('../data/plans.json');
+                const plans = await plansResponse.json();
+                document.getElementById('activePlans').textContent = `${plans.length} Plans`;
+
+                // Calculate Revenue
+                let revenue = 0;
+                activeHawkers.forEach(hawker => {
+                    const plan = plans.find(p => p.id === hawker.subscription.planId);
+                    if (plan) revenue += plan.price;
+                });
+                document.getElementById('totalRevenue').textContent = `RM ${revenue}`;
+
+                // Load Ads
+                const adsResponse = await fetch('../data/ads.json');
+                const ads = await adsResponse.json();
+                document.getElementById('activeAds').textContent = `${ads.length} Active`;
+
+                // Set pending applications (example)
+                const pendingHawkers = hawkers.filter(h => h.status === 'pending');
+                document.getElementById('pendingApplications').textContent = `${pendingHawkers.length} Pending`;
+
+                // Set admin count (example)
+                const adminUsers = users.filter(u => u.type === 'admin');
+                document.getElementById('adminCount').textContent = `${adminUsers.length} Admins`;
+
+                // Set report count (example)
+                document.getElementById('reportCount').textContent = '5 Reports';
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminSession');
+                sessionStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

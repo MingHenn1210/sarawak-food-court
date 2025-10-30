@@ -71,7 +71,6 @@ function getStallStatistics(stallName) {
     
     const stats = {
         pending: 0,
-        preparing: 0,
         ready: 0,
         completed: 0,
         totalRevenue: 0

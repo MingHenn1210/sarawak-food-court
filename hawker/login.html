@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hawker Login - Sarawak Food Court</title>
-    <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="../css/main.css?v=2">
+    <link rel="stylesheet" href="../css/hawker.css?v=2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="login-page">
     <div class="login-container">
@@ -19,10 +21,10 @@
             
             <form class="login-form" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label for="stallId">Stall ID</label>
+                    <label for="stallId">Phone Number</label>
                     <div class="input-group">
-                        <i class="fas fa-store"></i>
-                        <input type="text" id="stallId" placeholder="Enter your stall ID" required>
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" id="stallId" placeholder="Enter your phone number" required pattern="[0-9]{10,11}">
                     </div>
                 </div>
                 
@@ -49,9 +51,15 @@
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
                 
+                <div class="register-link">
+                    <p style="color: #7F8C8D; font-size: 0.95rem;">
+                        <i class="fas fa-info-circle"></i> Don't have an account? Contact your food court administrator to register your stall.
+                    </p>
+                </div>
+                
                 <div class="demo-credentials">
                     <p><strong>Demo Credentials:</strong></p>
-                    <p>Stall ID: <code>stall1</code> | Password: <code>demo123</code></p>
+                    <p>Phone: <code>0123456789</code> | Password: <code>demo123</code></p>
                 </div>
             </form>
             
@@ -65,6 +73,38 @@
     
     <script src="../js/app.js"></script>
     <script>
+        let supabase;
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
+        
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
         function togglePassword() {
             const input = document.getElementById('password');
             const icon = document.getElementById('eyeIcon');
@@ -83,9 +123,15 @@
         async function handleLogin(event) {
             event.preventDefault();
             
-            const stallId = document.getElementById('stallId').value;
+            const phone = document.getElementById('stallId').value;
             const password = document.getElementById('password').value;
             const remember = document.getElementById('remember').checked;
+            
+            console.log('🔐 Attempting login with:', {
+                phone: phone,
+                password: password,
+                passwordLength: password.length
+            });
             
             // Show loading
             const btn = event.target.querySelector('button[type="submit"]');
@@ -94,42 +140,82 @@
             btn.disabled = true;
             
             try {
-                // Load users from mock database
-                const response = await fetch('../data/users.json');
-                const users = await response.json();
+                // First, let's check if user exists with this phone
+                console.log('📞 Step 1: Checking if phone exists:', phone);
+                const { data: allUsers, error: checkError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('phone', phone);
                 
-                // Find hawker user
-                const user = users.find(u => 
-                    u.type === 'hawker' && 
-                    u.stallId === stallId && 
-                    u.password === password
-                );
+                console.log('📋 All users with this phone:', allUsers);
                 
-                if (user) {
-                    // Save session
-                    const session = {
-                        userId: user.id,
-                        stallId: user.stallId,
-                        stallName: user.stallName,
-                        name: user.name,
-                        loginTime: new Date().toISOString()
-                    };
-                    
-                    if (remember) {
-                        localStorage.setItem('hawkerSession', JSON.stringify(session));
-                    } else {
-                        sessionStorage.setItem('hawkerSession', JSON.stringify(session));
-                    }
-                    
-                    // Redirect to dashboard
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1000);
-                } else {
-                    throw new Error('Invalid credentials');
+                if (!allUsers || allUsers.length === 0) {
+                    throw new Error('No account found with this phone number. Please check the phone number.');
                 }
+                
+                // Check if any of them are hawkers
+                const hawkerUser = allUsers.find(u => u.role === 'hawker');
+                if (!hawkerUser) {
+                    throw new Error('This phone number is not registered as a hawker account.');
+                }
+                
+                console.log('� Hawker user found:', hawkerUser);
+                
+                // Now check password
+                console.log('🔑 Checking password...');
+                console.log('Stored password:', hawkerUser.password_hash);
+                console.log('Entered password:', password);
+                console.log('Match:', hawkerUser.password_hash === password);
+                
+                if (hawkerUser.password_hash !== password) {
+                    throw new Error('Incorrect password. Please try again.');
+                }
+                
+                const userData = hawkerUser;
+                console.log('✅ User authenticated:', userData);
+                
+                // Get hawker stall info
+                console.log('🏪 Searching for stall with hawker_id:', userData.id);
+                const { data: stallData, error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .select('*')
+                    .eq('hawker_id', userData.id)
+                    .eq('status', 'active')
+                    .single();
+                
+                console.log('🔍 Stall query result:', { stallData, stallError });
+                
+                if (stallError || !stallData) {
+                    console.error('❌ No active stall found');
+                    throw new Error('No active stall found for this account');
+                }
+                
+                // Save session
+                const session = {
+                    userId: userData.id,
+                    stallId: stallData.id,
+                    stallName: stallData.stall_name,
+                    name: userData.full_name,
+                    email: userData.email,
+                    loginTime: new Date().toISOString()
+                };
+                
+                if (remember) {
+                    localStorage.setItem('hawkerSession', JSON.stringify(session));
+                } else {
+                    sessionStorage.setItem('hawkerSession', JSON.stringify(session));
+                }
+                
+                console.log('✅ Login successful');
+                
+                // Redirect to orders page (first page)
+                setTimeout(() => {
+                    window.location.href = 'orders.html';
+                }, 1000);
+                
             } catch (error) {
-                alert('Login failed! Please check your credentials.');
+                console.error('❌ Login error:', error);
+                alert('Login failed! ' + error.message);
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
@@ -137,9 +223,11 @@
         
         // Check if already logged in
         window.addEventListener('DOMContentLoaded', () => {
+            initializeSupabase();
+            
             const session = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
             if (session) {
-                window.location.href = 'dashboard.html';
+                window.location.href = 'orders.html';
             }
         });
     </script>

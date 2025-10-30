@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History - Hawker Portal</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hawker.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="hawker-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-history"></i>
+            <span>Order History</span>
+            <span class="filter-label" id="filterLabel">All Time</span>
+        </div>
+        <button class="calendar-icon-btn" onclick="toggleDateFilter()">
+            <i class="fas fa-calendar-alt"></i>
+        </button>
+    </nav>
+    
+    <!-- Date Filter Popup -->
+    <div class="date-filter-popup" id="dateFilterPopup">
+        <div class="date-filter-content">
+            <div class="date-filter-header">
+                <h3><i class="fas fa-calendar-alt"></i> Select Period</h3>
+                <button class="close-filter" onclick="toggleDateFilter()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="date-filter-options">
+                <button class="filter-option active" data-filter="all" onclick="selectFilter('all', 'All Time')">
+                    <i class="fas fa-infinity"></i>
+                    <span>All Time</span>
+                    <span class="order-count" id="allCount">0</span>
+                </button>
+                <button class="filter-option" data-filter="today" onclick="selectFilter('today', 'Today')">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Today</span>
+                    <span class="order-count" id="todayCount">0</span>
+                </button>
+                <button class="filter-option" data-filter="week" onclick="selectFilter('week', 'This Week')">
+                    <i class="fas fa-calendar-week"></i>
+                    <span>This Week</span>
+                    <span class="order-count" id="weekCount">0</span>
+                </button>
+                <button class="filter-option" data-filter="month" onclick="selectFilter('month', 'This Month')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>This Month</span>
+                    <span class="order-count" id="monthCount">0</span>
+                </button>
+            </div>
+            
+            <div class="date-range-divider">
+                <span>or select custom date range</span>
+            </div>
+            
+            <div class="custom-date-range">
+                <div class="date-input-group">
+                    <label><i class="fas fa-calendar-day"></i> From Date</label>
+                    <input type="date" id="fromDate" onchange="updateCustomRangeCount()">
+                </div>
+                <div class="date-input-group">
+                    <label><i class="fas fa-calendar-day"></i> To Date</label>
+                    <input type="date" id="toDate" onchange="updateCustomRangeCount()">
+                </div>
+                <button class="btn-apply-range" onclick="applyCustomDateRange()">
+                    <i class="fas fa-check"></i> Apply Date Range
+                    <span class="custom-count" id="customCount"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <main class="dashboard-content">
+        <div class="orders-container" id="ordersContainer">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading order history...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav hawker-nav">
+        <a href="orders.html" class="nav-item">
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
+        </a>
+        <a href="order-history.html" class="nav-item active">
+            <i class="fas fa-history"></i>
+            <span>History</span>
+        </a>
+        <a href="menu-management.html" class="nav-item">
+            <i class="fas fa-utensils"></i>
+            <span>Menu</span>
+        </a>
+        <a href="settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+    </nav>
+    
+    <script src="../js/app.js"></script>
+    <script src="../js/orders.js"></script>
+    <script>
+        let session = null;
+        let allOrders = [];
+        let currentFilter = 'all';
+        let customFromDate = null;
+        let customToDate = null;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadOrders();
+            initializeDateInputs();
+        });
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            session = JSON.parse(sessionData);
+        }
+        
+        function loadOrders() {
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            
+            // Filter orders for this stall - show only completed orders
+            allOrders = orders.filter(order => {
+                const hasStallOrder = order.stallOrders.some(so => so.stallName === session.stallName);
+                const status = order.stallStatuses?.[session.stallName] || 'pending';
+                return hasStallOrder && status === 'completed';
+            }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            updateFilterCounts();
+            displayOrders();
+        }
+        
+        function updateFilterCounts() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            
+            const todayOrders = allOrders.filter(order => new Date(order.timestamp) >= today);
+            const weekOrders = allOrders.filter(order => new Date(order.timestamp) >= weekAgo);
+            const monthOrders = allOrders.filter(order => new Date(order.timestamp) >= monthAgo);
+            
+            document.getElementById('allCount').textContent = allOrders.length;
+            document.getElementById('todayCount').textContent = todayOrders.length;
+            document.getElementById('weekCount').textContent = weekOrders.length;
+            document.getElementById('monthCount').textContent = monthOrders.length;
+        }
+        
+        function toggleDateFilter() {
+            const popup = document.getElementById('dateFilterPopup');
+            popup.classList.toggle('active');
+        }
+        
+        function selectFilter(filter, label) {
+            currentFilter = filter;
+            customFromDate = null;
+            customToDate = null;
+            
+            // Update active state
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            event.target.closest('.filter-option').classList.add('active');
+            
+            // Clear custom date inputs
+            document.getElementById('fromDate').value = '';
+            document.getElementById('toDate').value = '';
+            document.getElementById('customCount').textContent = '';
+            
+            // Update label
+            document.getElementById('filterLabel').textContent = label;
+            
+            // Close popup
+            toggleDateFilter();
+            
+            // Display filtered orders
+            displayOrders();
+        }
+        
+        function initializeDateInputs() {
+            const today = new Date();
+            const maxDate = today.toISOString().split('T')[0];
+            
+            document.getElementById('fromDate').max = maxDate;
+            document.getElementById('toDate').max = maxDate;
+        }
+        
+        function updateCustomRangeCount() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            if (!fromDate || !toDate) {
+                document.getElementById('customCount').textContent = '';
+                return;
+            }
+            
+            const from = new Date(fromDate);
+            from.setHours(0, 0, 0, 0);
+            const to = new Date(toDate);
+            to.setHours(23, 59, 59, 999);
+            
+            if (from > to) {
+                document.getElementById('customCount').textContent = '(Invalid range)';
+                return;
+            }
+            
+            const count = allOrders.filter(order => {
+                const orderDate = new Date(order.timestamp);
+                return orderDate >= from && orderDate <= to;
+            }).length;
+            
+            document.getElementById('customCount').textContent = `(${count} orders)`;
+        }
+        
+        function applyCustomDateRange() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            if (!fromDate || !toDate) {
+                showToast('Please select both from and to dates', 'warning');
+                return;
+            }
+            
+            const from = new Date(fromDate);
+            const to = new Date(toDate);
+            
+            if (from > to) {
+                showToast('From date cannot be after to date', 'error');
+                return;
+            }
+            
+            customFromDate = from;
+            customFromDate.setHours(0, 0, 0, 0);
+            customToDate = to;
+            customToDate.setHours(23, 59, 59, 999);
+            
+            currentFilter = 'custom';
+            
+            // Remove active from preset options
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // Update label
+            const fromStr = customFromDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const toStr = customToDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            document.getElementById('filterLabel').textContent = `${fromStr} - ${toStr}`;
+            
+            // Close popup
+            toggleDateFilter();
+            
+            // Display filtered orders
+            displayOrders();
+        }
+        
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i> 
+                ${message}
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        function displayOrders() {
+            const container = document.getElementById('ordersContainer');
+            
+            let filteredOrders = allOrders;
+            
+            // Apply time filters
+            if (currentFilter === 'custom' && customFromDate && customToDate) {
+                filteredOrders = allOrders.filter(order => {
+                    const orderDate = new Date(order.timestamp);
+                    return orderDate >= customFromDate && orderDate <= customToDate;
+                });
+            } else if (currentFilter !== 'all') {
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                
+                filteredOrders = allOrders.filter(order => {
+                    const orderDate = new Date(order.timestamp);
+                    
+                    switch(currentFilter) {
+                        case 'today':
+                            return orderDate >= today;
+                        case 'week':
+                            const weekAgo = new Date(today);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            return orderDate >= weekAgo;
+                        case 'month':
+                            const monthAgo = new Date(today);
+                            monthAgo.setMonth(monthAgo.getMonth() - 1);
+                            return orderDate >= monthAgo;
+                        default:
+                            return true;
+                    }
+                });
+            }
+            
+            if (filteredOrders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <p>No completed orders ${currentFilter === 'all' ? 'yet' : 'in this period'}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredOrders.map(order => {
+                const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
+                const status = order.stallStatuses?.[session.stallName] || 'pending';
+                
+                return `
+                    <div class="order-detail-card">
+                        <div class="order-card-header">
+                            <div>
+                                <h3>${order.orderId}</h3>
+                                <span class="order-time"><i class="fas fa-clock"></i> ${formatDateTime(order.timestamp)}</span>
+                            </div>
+                            <div class="order-table">
+                                <i class="fas fa-chair"></i> Table ${order.tableNumber}
+                            </div>
+                        </div>
+                        
+                        <div class="order-items-list">
+                            ${stallOrder.items.map(item => `
+                                <div class="order-item-row">
+                                    <div class="item-info">
+                                        <strong>${item.name}</strong> × ${item.quantity}
+                                        ${item.specialInstructions ? 
+                                            `<p class="item-note"><i class="fas fa-comment"></i> ${item.specialInstructions}</p>` 
+                                            : ''}
+                                    </div>
+                                    <span>RM ${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="order-card-footer">
+                            <div class="order-total">
+                                <strong>Total: RM ${stallOrder.total.toFixed(2)}</strong>
+                            </div>
+                            <div class="order-status-actions">
+                                <span class="status-badge status-completed">
+                                    <i class="fas fa-check"></i> Completed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const orderDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            
+            const timeStr = date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            
+            if (orderDay.getTime() === today.getTime()) {
+                return `Today, ${timeStr}`;
+            }
+            
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (orderDay.getTime() === yesterday.getTime()) {
+                return `Yesterday, ${timeStr}`;
+            }
+            
+            return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${timeStr}`;
+        }
+    </script>
+</body>
+</html>

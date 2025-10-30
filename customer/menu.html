@@ -155,9 +155,18 @@
                     </div>
                 `;
                 
-                // Load menu items
-                const menuResponse = await fetch('../data/menus.json');
-                const allMenus = await menuResponse.json();
+                // Load menu items - check localStorage first, then fallback to JSON
+                let allMenus = [];
+                const localMenus = localStorage.getItem('menus');
+                
+                if (localMenus) {
+                    allMenus = JSON.parse(localMenus);
+                } else {
+                    const menuResponse = await fetch('../data/menus.json');
+                    allMenus = await menuResponse.json();
+                    localStorage.setItem('menus', JSON.stringify(allMenus));
+                }
+                
                 menuItems = allMenus.filter(item => item.stallId === stallId && item.available);
                 
                 // Extract unique categories

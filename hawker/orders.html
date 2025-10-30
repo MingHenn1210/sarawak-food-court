@@ -12,14 +12,8 @@
     <!-- Top Navigation -->
     <nav class="top-nav">
         <div class="nav-brand">
-            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
-            <span>Orders Management</span>
-        </div>
-        <div class="filter-tabs">
-            <button class="filter-tab active" onclick="filterOrders('all')">All</button>
-            <button class="filter-tab" onclick="filterOrders('pending')">Pending</button>
-            <button class="filter-tab" onclick="filterOrders('preparing')">Preparing</button>
-            <button class="filter-tab" onclick="filterOrders('ready')">Ready</button>
+            <i class="fas fa-receipt"></i>
+            <span>Orders</span>
         </div>
     </nav>
     
@@ -34,13 +28,13 @@
     
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav hawker-nav">
-        <a href="dashboard.html" class="nav-item">
-            <i class="fas fa-home"></i>
-            <span>Dashboard</span>
-        </a>
         <a href="orders.html" class="nav-item active">
             <i class="fas fa-receipt"></i>
             <span>Orders</span>
+        </a>
+        <a href="order-history.html" class="nav-item">
+            <i class="fas fa-history"></i>
+            <span>History</span>
         </a>
         <a href="menu-management.html" class="nav-item">
             <i class="fas fa-utensils"></i>
@@ -57,7 +51,6 @@
     <script>
         let session = null;
         let allOrders = [];
-        let currentFilter = 'all';
         
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
@@ -79,22 +72,14 @@
         function loadOrders() {
             const orders = JSON.parse(localStorage.getItem('orders') || '[]');
             
-            // Filter orders for this stall
-            allOrders = orders.filter(order => 
-                order.stallOrders.some(so => so.stallName === session.stallName)
-            ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            displayOrders();
-        }
-        
-        function filterOrders(filter) {
-            currentFilter = filter;
-            
-            // Update active tab
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
+            // Filter orders for this stall (only pending and ready, exclude completed)
+            allOrders = orders.filter(order => {
+                const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
+                if (!stallOrder) return false;
+                
+                const status = order.stallStatuses?.[session.stallName] || 'pending';
+                return status === 'pending' || status === 'ready';
+            }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             displayOrders();
         }
@@ -102,25 +87,18 @@
         function displayOrders() {
             const container = document.getElementById('ordersContainer');
             
-            let filteredOrders = allOrders;
-            if (currentFilter !== 'all') {
-                filteredOrders = allOrders.filter(order => {
-                    const status = order.stallStatuses?.[session.stallName] || 'pending';
-                    return status === currentFilter;
-                });
-            }
-            
-            if (filteredOrders.length === 0) {
+            if (allOrders.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-receipt"></i>
-                        <p>No ${currentFilter === 'all' ? '' : currentFilter} orders</p>
+                        <p>No active orders</p>
+                        <small>Completed orders can be viewed in Order History</small>
                     </div>
                 `;
                 return;
             }
             
-            container.innerHTML = filteredOrders.map(order => {
+            container.innerHTML = allOrders.map(order => {
                 const stallOrder = order.stallOrders.find(so => so.stallName === session.stallName);
                 const status = order.stallStatuses?.[session.stallName] || 'pending';
                 
@@ -194,8 +172,7 @@
         
         function getNextStatus(currentStatus) {
             const flow = {
-                'pending': 'preparing',
-                'preparing': 'ready',
+                'pending': 'ready',
                 'ready': 'completed'
             };
             return flow[currentStatus] || 'completed';
@@ -203,8 +180,7 @@
         
         function getNextStatusLabel(currentStatus) {
             const labels = {
-                'pending': 'Start Preparing',
-                'preparing': 'Mark Ready',
+                'pending': 'Mark Ready',
                 'ready': 'Complete'
             };
             return labels[currentStatus] || 'Update';
@@ -213,7 +189,6 @@
         function formatStatus(status) {
             const labels = {
                 pending: 'Pending',
-                preparing: 'Preparing',
                 ready: 'Ready',
                 completed: 'Completed'
             };

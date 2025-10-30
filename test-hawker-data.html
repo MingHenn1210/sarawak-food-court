@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hawker Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Hawker Data Test Tool</h1>
+        <p>Test hawker registration and login data integrity</p>
+
+        <div class="test-section">
+            <h2>1. List All Hawker Users</h2>
+            <button onclick="listAllHawkers()">Load All Hawkers</button>
+            <pre id="hawkersList"></pre>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Login Credentials (Detailed)</h2>
+            <input type="tel" id="testPhone" placeholder="Phone Number" value="0123456789">
+            <input type="password" id="testPassword" placeholder="Password" value="">
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testLoginDetailed()">Detailed Test</button>
+            <pre id="loginResult"></pre>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Check User & Stall by Phone</h2>
+            <input type="tel" id="checkPhone" placeholder="Phone Number">
+            <button onclick="checkUserAndStall()">Check Data</button>
+            <pre id="checkResult"></pre>
+        </div>
+
+        <div class="test-section">
+            <h2>4. List All Hawker Stalls</h2>
+            <button onclick="listAllStalls()">Load All Stalls</button>
+            <pre id="stallsList"></pre>
+        </div>
+    </div>
+
+    <script>
+        let supabase;
+
+        // Initialize Supabase
+        async function initSupabase() {
+            const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NjQwNTgsImV4cCI6MjA0NjE0MDA1OH0.HKrRlJqOq7OE3k0x8Dw7OC7C0HMvTnW7l3UfvzwTONY';
+            
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase initialized');
+        }
+
+        async function listAllHawkers() {
+            const output = document.getElementById('hawkersList');
+            output.innerHTML = 'Loading...';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'hawker')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                output.innerHTML = `<span class="success">✅ Found ${data.length} hawker(s)</span>\n\n` + 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testLogin() {
+            const phone = document.getElementById('testPhone').value;
+            const password = document.getElementById('testPassword').value;
+            const output = document.getElementById('loginResult');
+            output.innerHTML = 'Testing login...';
+            
+            try {
+                // Step 1: Check user
+                console.log('🔐 Testing login with:', { phone, password });
+                
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'hawker')
+                    .eq('phone', phone)
+                    .eq('password_hash', password)
+                    .single();
+                
+                if (userError || !userData) {
+                    throw new Error('Invalid credentials - User not found');
+                }
+                
+                console.log('✅ User found:', userData);
+                
+                // Step 2: Check stall
+                const { data: stallData, error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .select('*')
+                    .eq('hawker_id', userData.id)
+                    .eq('status', 'active')
+                    .single();
+                
+                if (stallError || !stallData) {
+                    throw new Error('No active stall found');
+                }
+                
+                console.log('✅ Stall found:', stallData);
+                
+                output.innerHTML = `<span class="success">✅ LOGIN SUCCESSFUL!</span>\n\n` +
+                    `User Data:\n${JSON.stringify(userData, null, 2)}\n\n` +
+                    `Stall Data:\n${JSON.stringify(stallData, null, 2)}`;
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ LOGIN FAILED: ${error.message}</span>`;
+                console.error('❌ Login test failed:', error);
+            }
+        }
+
+        async function testLoginDetailed() {
+            const phone = document.getElementById('testPhone').value;
+            const password = document.getElementById('testPassword').value;
+            const output = document.getElementById('loginResult');
+            output.innerHTML = 'Running detailed test...\n\n';
+            
+            let result = '';
+            
+            try {
+                // Step 1: Check all users with this phone
+                result += '📞 STEP 1: Checking all users with phone: ' + phone + '\n';
+                const { data: allUsers, error: allError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('phone', phone);
+                
+                result += `Found ${allUsers?.length || 0} user(s)\n`;
+                result += JSON.stringify(allUsers, null, 2) + '\n\n';
+                
+                if (!allUsers || allUsers.length === 0) {
+                    throw new Error('❌ No user found with this phone number');
+                }
+                
+                // Step 2: Check for hawker role
+                result += '👤 STEP 2: Checking for hawker role\n';
+                const hawkerUser = allUsers.find(u => u.role === 'hawker');
+                if (!hawkerUser) {
+                    throw new Error('❌ User found but not a hawker');
+                }
+                result += '✅ Hawker user found\n\n';
+                
+                // Step 3: Check password
+                result += '🔑 STEP 3: Checking password\n';
+                result += `Stored password: "${hawkerUser.password_hash}"\n`;
+                result += `Entered password: "${password}"\n`;
+                result += `Length match: ${hawkerUser.password_hash.length} vs ${password.length}\n`;
+                result += `Exact match: ${hawkerUser.password_hash === password}\n\n`;
+                
+                if (hawkerUser.password_hash !== password) {
+                    // Check for whitespace issues
+                    result += '🔍 Checking for whitespace issues:\n';
+                    result += `Stored trimmed: "${hawkerUser.password_hash.trim()}"\n`;
+                    result += `Entered trimmed: "${password.trim()}"\n`;
+                    result += `Trimmed match: ${hawkerUser.password_hash.trim() === password.trim()}\n\n`;
+                    throw new Error('❌ Password does not match');
+                }
+                result += '✅ Password matches\n\n';
+                
+                // Step 4: Check stall
+                result += '🏪 STEP 4: Checking for active stall\n';
+                const { data: stallData, error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .select('*')
+                    .eq('hawker_id', hawkerUser.id);
+                
+                result += `Found ${stallData?.length || 0} stall(s)\n`;
+                result += JSON.stringify(stallData, null, 2) + '\n\n';
+                
+                if (!stallData || stallData.length === 0) {
+                    throw new Error('❌ No stall found for this hawker');
+                }
+                
+                const activeStall = stallData.find(s => s.status === 'active');
+                if (!activeStall) {
+                    throw new Error('❌ No active stall found');
+                }
+                result += '✅ Active stall found\n\n';
+                
+                result += '<span class="success">✅✅✅ ALL CHECKS PASSED - LOGIN SHOULD WORK! ✅✅✅</span>';
+                output.innerHTML = '<pre>' + result + '</pre>';
+                
+            } catch (error) {
+                result += '\n<span class="error">❌ FAILED: ' + error.message + '</span>';
+                output.innerHTML = '<pre>' + result + '</pre>';
+                console.error('❌ Detailed test failed:', error);
+            }
+        }
+
+        async function checkUserAndStall() {
+            const phone = document.getElementById('checkPhone').value;
+            const output = document.getElementById('checkResult');
+            output.innerHTML = 'Checking...';
+            
+            try {
+                // Get user
+                const { data: user, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('phone', phone)
+                    .single();
+                
+                if (userError) {
+                    output.innerHTML = `<span class="error">❌ User not found</span>`;
+                    return;
+                }
+                
+                // Get stall
+                const { data: stall, error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .select('*')
+                    .eq('hawker_id', user.id);
+                
+                output.innerHTML = `<span class="success">✅ User found</span>\n\n` +
+                    `User:\n${JSON.stringify(user, null, 2)}\n\n` +
+                    `Stalls:\n${JSON.stringify(stall, null, 2)}`;
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function listAllStalls() {
+            const output = document.getElementById('stallsList');
+            output.innerHTML = 'Loading...';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        *,
+                        users:hawker_id (
+                            full_name,
+                            phone,
+                            email
+                        ),
+                        food_courts:food_court_id (
+                            name
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                output.innerHTML = `<span class="success">✅ Found ${data.length} stall(s)</span>\n\n` + 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initSupabase);
+    </script>
+</body>
+</html>

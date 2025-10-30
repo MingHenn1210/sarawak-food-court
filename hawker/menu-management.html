@@ -12,7 +12,7 @@
     <!-- Top Navigation -->
     <nav class="top-nav">
         <div class="nav-brand">
-            <a href="dashboard.html"><i class="fas fa-arrow-left"></i></a>
+            <i class="fas fa-utensils"></i>
             <span>Menu Management</span>
         </div>
     </nav>
@@ -58,20 +58,32 @@
                     <textarea id="itemDescription" rows="3" required></textarea>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="itemCategory">Category *</label>
-                        <select id="itemCategory" required>
-                            <option value="Main">Main Dish</option>
-                            <option value="Side">Side Dish</option>
-                            <option value="Drink">Drink</option>
-                            <option value="Dessert">Dessert</option>
-                        </select>
+                <div class="form-group">
+                    <label for="itemCategory">Category *</label>
+                    <select id="itemCategory" required>
+                        <option value="Main">Main Dish</option>
+                        <option value="Side">Side Dish</option>
+                        <option value="Drink">Drink</option>
+                        <option value="Dessert">Dessert</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="itemImageUpload">Upload Image</label>
+                    <div class="image-upload-container">
+                        <div class="image-preview" id="imagePreview">
+                            <i class="fas fa-image"></i>
+                            <p>No image selected</p>
+                        </div>
+                        <input type="file" id="itemImageUpload" accept="image/*" onchange="handleImageUpload(event)" style="display: none;">
+                        <button type="button" class="btn-upload" onclick="document.getElementById('itemImageUpload').click()">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </button>
+                        <button type="button" class="btn-remove" id="removeImageBtn" onclick="removeImage()" style="display: none;">
+                            <i class="fas fa-times"></i> Remove
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label for="itemImage">Image URL</label>
-                        <input type="text" id="itemImage" placeholder="https://...">
-                    </div>
+                    <input type="hidden" id="itemImage">
                 </div>
                 
                 <div class="form-row">
@@ -103,13 +115,13 @@
     
     <!-- Bottom Navigation (Mobile) -->
     <nav class="bottom-nav hawker-nav">
-        <a href="dashboard.html" class="nav-item">
-            <i class="fas fa-home"></i>
-            <span>Dashboard</span>
-        </a>
         <a href="orders.html" class="nav-item">
             <i class="fas fa-receipt"></i>
             <span>Orders</span>
+        </a>
+        <a href="order-history.html" class="nav-item">
+            <i class="fas fa-history"></i>
+            <span>History</span>
         </a>
         <a href="menu-management.html" class="nav-item active">
             <i class="fas fa-utensils"></i>
@@ -127,6 +139,7 @@
         let session = null;
         let menuItems = [];
         let editingItemId = null;
+        let myStallId = null;
         
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
@@ -144,20 +157,37 @@
         
         async function loadMenu() {
             try {
-                const response = await fetch('../data/menus.json');
-                const allMenus = await response.json();
-                
-                // Get stall info
-                const stallsResponse = await fetch('../data/stalls.json');
-                const stalls = await stallsResponse.json();
-                const myStall = stalls.find(s => s.name === session.stallName);
-                
-                if (myStall) {
-                    menuItems = allMenus.filter(item => item.stallId === myStall.id);
+                // Get stall ID from session
+                if (!session.stallId) {
+                    console.error('No stall ID in session');
                     displayMenu();
+                    return;
                 }
+                
+                myStallId = session.stallId;
+                console.log('My Stall ID from session:', myStallId);
+                console.log('My Stall Name:', session.stallName);
+                
+                // Check localStorage for menu data
+                const localMenus = localStorage.getItem('menus');
+                let allMenus = [];
+                
+                if (localMenus) {
+                    console.log('Loading menus from localStorage');
+                    allMenus = JSON.parse(localMenus);
+                } else {
+                    console.log('No menus in localStorage, starting with empty array');
+                    allMenus = [];
+                    localStorage.setItem('menus', JSON.stringify(allMenus));
+                }
+                
+                console.log('Total menus loaded:', allMenus.length);
+                menuItems = allMenus.filter(item => item.stallId === myStallId);
+                console.log('My menu items:', menuItems.length);
+                displayMenu();
             } catch (error) {
                 console.error('Error loading menu:', error);
+                displayMenu();
             }
         }
         
@@ -178,29 +208,30 @@
             }
             
             container.innerHTML = menuItems.map(item => `
-                <div class="menu-item-card ${!item.available ? 'unavailable' : ''}">
-                    <div class="item-image" style="background-image: url('${item.image}')">
-                        ${!item.available ? '<div class="unavailable-overlay">Unavailable</div>' : ''}
-                        ${item.isPopular ? '<span class="popular-badge">Popular</span>' : ''}
-                    </div>
-                    <div class="item-details">
-                        <h3>${item.name}</h3>
-                        <p>${item.description}</p>
-                        <div class="item-meta">
-                            <span class="category">${item.category}</span>
-                            <span class="price">RM ${item.price.toFixed(2)}</span>
+                <div class="menu-card ${!item.available ? 'unavailable' : ''}" style="background-image: url('${item.image}')">
+                    <div class="menu-card-overlay">
+                        <div class="menu-card-header">
+                            <div class="menu-item-info">
+                                <h3>${item.name}</h3>
+                                <span class="menu-price">RM ${item.price.toFixed(2)}</span>
+                            </div>
+                            <span class="menu-category-badge">${item.category}</span>
                         </div>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-icon" onclick="toggleAvailability(${item.id})" title="Toggle Availability">
-                            <i class="fas fa-${item.available ? 'eye' : 'eye-slash'}"></i>
-                        </button>
-                        <button class="btn-icon" onclick="editItem(${item.id})" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-icon btn-danger" onclick="deleteItem(${item.id})" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        
+                        <div class="menu-card-footer">
+                            ${item.isPopular ? '<span class="popular-tag"><i class="fas fa-star"></i> Popular</span>' : '<span></span>'}
+                            <div class="menu-card-actions">
+                                <button class="action-btn ${item.available ? 'btn-available' : 'btn-unavailable'}" onclick="toggleAvailability(${item.id})" title="${item.available ? 'Available' : 'Unavailable'}">
+                                    <i class="fas fa-${item.available ? 'eye' : 'eye-slash'}"></i>
+                                </button>
+                                <button class="action-btn btn-edit" onclick="editItem(${item.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn btn-delete" onclick="deleteItem(${item.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -211,6 +242,14 @@
             document.getElementById('modalTitle').textContent = 'Add Menu Item';
             document.getElementById('itemForm').reset();
             document.getElementById('itemId').value = '';
+            document.getElementById('itemImage').value = '';
+            
+            // Reset image preview
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '<i class="fas fa-image"></i><p>No image selected</p>';
+            preview.style.backgroundImage = '';
+            document.getElementById('removeImageBtn').style.display = 'none';
+            
             document.getElementById('itemModal').classList.add('show');
         }
         
@@ -229,6 +268,18 @@
             document.getElementById('itemAvailable').checked = item.available;
             document.getElementById('itemPopular').checked = item.isPopular || false;
             
+            // Show image preview if exists
+            const preview = document.getElementById('imagePreview');
+            if (item.image) {
+                preview.style.backgroundImage = `url('${item.image}')`;
+                preview.innerHTML = '';
+                document.getElementById('removeImageBtn').style.display = 'inline-block';
+            } else {
+                preview.innerHTML = '<i class="fas fa-image"></i><p>No image selected</p>';
+                preview.style.backgroundImage = '';
+                document.getElementById('removeImageBtn').style.display = 'none';
+            }
+            
             document.getElementById('itemModal').classList.add('show');
         }
         
@@ -240,26 +291,53 @@
         function saveItem(event) {
             event.preventDefault();
             
+            // Use the stored stall ID
+            if (!myStallId) {
+                showToast('Error: Stall ID not found. Please refresh the page.', 'error');
+                return;
+            }
+            
             const itemData = {
                 id: editingItemId || Date.now(),
-                stallId: menuItems[0]?.stallId || 1,
+                stallId: myStallId,
                 name: document.getElementById('itemName').value,
                 price: parseFloat(document.getElementById('itemPrice').value),
                 description: document.getElementById('itemDescription').value,
                 category: document.getElementById('itemCategory').value,
-                image: document.getElementById('itemImage').value || 'https://via.placeholder.com/300',
+                image: document.getElementById('itemImage').value || 'https://via.placeholder.com/300?text=No+Image',
                 available: document.getElementById('itemAvailable').checked,
                 isPopular: document.getElementById('itemPopular').checked
             };
             
+            console.log('Saving item:', itemData);
+            
+            // Get all menus from localStorage
+            let allMenus = JSON.parse(localStorage.getItem('menus') || '[]');
+            
             if (editingItemId) {
-                const index = menuItems.findIndex(i => i.id === editingItemId);
-                menuItems[index] = itemData;
+                // Update existing item
+                const localIndex = menuItems.findIndex(i => i.id === editingItemId);
+                if (localIndex !== -1) {
+                    menuItems[localIndex] = itemData;
+                }
+                
+                // Update in all menus array
+                const globalIndex = allMenus.findIndex(i => i.id === editingItemId);
+                if (globalIndex !== -1) {
+                    allMenus[globalIndex] = itemData;
+                }
+                
                 showToast('Item updated successfully!');
             } else {
+                // Add new item
                 menuItems.push(itemData);
+                allMenus.push(itemData);
                 showToast('Item added successfully!');
             }
+            
+            // Save to localStorage
+            localStorage.setItem('menus', JSON.stringify(allMenus));
+            console.log('Saved to localStorage. Total menus:', allMenus.length);
             
             closeItemModal();
             displayMenu();
@@ -269,6 +347,15 @@
             const item = menuItems.find(i => i.id === itemId);
             if (item) {
                 item.available = !item.available;
+                
+                // Update in localStorage
+                const allMenus = JSON.parse(localStorage.getItem('menus') || '[]');
+                const globalIndex = allMenus.findIndex(i => i.id === itemId);
+                if (globalIndex !== -1) {
+                    allMenus[globalIndex].available = item.available;
+                    localStorage.setItem('menus', JSON.stringify(allMenus));
+                }
+                
                 displayMenu();
                 showToast(`Item marked as ${item.available ? 'available' : 'unavailable'}`);
             }
@@ -276,16 +363,86 @@
         
         function deleteItem(itemId) {
             if (confirm('Are you sure you want to delete this item?')) {
+                // Remove from local array
                 menuItems = menuItems.filter(i => i.id !== itemId);
+                
+                // Remove from localStorage
+                const allMenus = JSON.parse(localStorage.getItem('menus') || '[]');
+                const updatedMenus = allMenus.filter(i => i.id !== itemId);
+                localStorage.setItem('menus', JSON.stringify(updatedMenus));
+                
                 displayMenu();
                 showToast('Item deleted successfully!');
             }
         }
         
-        function showToast(message) {
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select a valid image file', 'error');
+                return;
+            }
+            
+            // Validate file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size must be less than 5MB', 'error');
+                return;
+            }
+            
+            // Read file and convert to base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                
+                // Store in hidden input
+                document.getElementById('itemImage').value = base64Image;
+                
+                // Show preview
+                const preview = document.getElementById('imagePreview');
+                preview.style.backgroundImage = `url('${base64Image}')`;
+                preview.innerHTML = '';
+                
+                // Show remove button
+                document.getElementById('removeImageBtn').style.display = 'inline-block';
+                
+                showToast('Image uploaded successfully!');
+            };
+            
+            reader.onerror = function() {
+                showToast('Failed to read image file', 'error');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function removeImage() {
+            // Clear the image
+            document.getElementById('itemImage').value = '';
+            document.getElementById('itemImageUpload').value = '';
+            
+            // Reset preview
+            const preview = document.getElementById('imagePreview');
+            preview.style.backgroundImage = '';
+            preview.innerHTML = '<i class="fas fa-image"></i><p>No image selected</p>';
+            
+            // Hide remove button
+            document.getElementById('removeImageBtn').style.display = 'none';
+            
+            showToast('Image removed');
+        }
+        
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'error' ? 'exclamation-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 
+                        'check-circle';
+            
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             document.body.appendChild(toast);
             
             setTimeout(() => toast.classList.add('show'), 100);

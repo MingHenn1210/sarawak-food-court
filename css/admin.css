@@ -3,7 +3,7 @@
 ======================================== */
 
 .admin-dashboard {
-    background-color: var(--bg-secondary);
+    background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
     min-height: 100vh;
     padding-top: var(--header-height);
     padding-bottom: var(--bottom-nav-height);
@@ -11,14 +11,30 @@
 
 /* Admin Bottom Nav */
 .admin-nav {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
     border-top: none;
-    box-shadow: 0 -4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 -4px 16px rgba(255, 107, 53, 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
+    height: var(--bottom-nav-height);
+    z-index: 100;
+}
+
+/* Fork and Spoon Logo Styling */
+.nav-brand i.fa-utensils {
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 1.6rem;
+    filter: drop-shadow(0 2px 4px rgba(255, 107, 53, 0.3));
 }
 
 .admin-nav .nav-item {
@@ -26,12 +42,12 @@
     flex-direction: row;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.65rem 1.25rem;
-    color: rgba(255, 255, 255, 0.8);
+    padding: 0.75rem 1.25rem;
+    color: rgba(255, 255, 255, 0.85);
     font-size: 0.9rem;
     font-weight: 600;
-    border-radius: 12px;
-    transition: all 0.3s ease;
+    border-radius: 14px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
 }
 
@@ -45,27 +61,33 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.admin-nav .nav-item:not(.active):hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
 /* Admin User Button - Orange Hover Effect */
 .admin-user-btn {
-    padding: 0.65rem 1.25rem !important;
+    padding: 0.75rem 1.25rem !important;
     background-color: rgba(255, 255, 255, 0.95) !important;
-    color: #667eea !important;
+    color: #FF6B35 !important;
     border: 2px solid transparent !important;
-    transition: all 0.3s ease !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     font-weight: 600 !important;
+    border-radius: 14px !important;
 }
 
 .admin-user-btn i {
-    color: #667eea !important;
+    color: #FF6B35 !important;
 }
 
 .admin-user-btn:hover,
 .admin-user-btn:active {
-    background: linear-gradient(135deg, #ff6b35, #f7931e) !important;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42) !important;
     color: white !important;
-    border-color: #ff6b35 !important;
+    border-color: transparent !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
 }
 
 .admin-user-btn:hover i,
@@ -79,25 +101,27 @@
 
 /* Logout Mini Button */
 .logout-btn-mini {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 2px solid transparent;
     background-color: rgba(255, 255, 255, 0.95);
-    color: #667eea;
+    color: #FF6B35;
+    display: flex;
+    align-items: center;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.1rem;
 }
 
 .logout-btn-mini:hover,
 .logout-btn-mini:active {
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
     color: white;
-    border-color: #ff6b35;
+    border-color: transparent;
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
 }
@@ -108,18 +132,18 @@
 
 /* Stats Icons Custom Colors */
 .stat-icon.hawkers {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
     color: white;
 }
 
 .stat-icon.active {
-    background-color: #E8F5E9;
-    color: #388E3C;
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
 }
 
 .stat-icon.expiring {
-    background-color: #FFF3E0;
-    color: #F57C00;
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: white;
 }
 
 /* Hawkers List */
@@ -127,32 +151,46 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
-.hawker-card {
-    background-color: var(--bg-primary);
-    border-radius: 16px;
+/* Modal Form Actions - Sticky at Bottom */
+.modal-content .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 2px solid var(--border-color);
+    position: sticky;
+    bottom: -2rem;
+    background: var(--bg-primary);
+    z-index: 10;
+}
+
+.dashboard-section {
+    background-color: transparent;
+    border-radius: 0;
     padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s ease;
-    border-left: 4px solid var(--border-color);
+    margin-bottom: 2rem;
+    box-shadow: none;
 }
 
 .hawker-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .hawker-card.active {
-    border-left-color: #388E3C;
+    border-left: 4px solid #10B981;
 }
 
 .hawker-card.expiring {
-    border-left-color: #F57C00;
+    border-left: 4px solid #F59E0B;
 }
 
 .hawker-card.expired {
-    border-left-color: #d32f2f;
+    border-left: 4px solid #EF4444;
     opacity: 0.8;
 }
 
@@ -170,21 +208,23 @@
 }
 
 .hawker-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
 }
 
 .hawker-owner {
     color: var(--text-secondary);
     font-size: 0.875rem;
     margin: 0.25rem 0 0 0;
+    font-weight: 500;
 }
 
 .hawker-details {
@@ -461,7 +501,7 @@
 .btn-logout {
     width: 100%;
     padding: 1rem;
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    background: #F57C00;
     color: white;
     border: none;
     border-radius: 12px;
@@ -473,17 +513,829 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
 }
 
 .btn-logout:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
-    background: linear-gradient(135deg, #f7931e, #ff6b35);
+    box-shadow: 0 6px 20px rgba(245, 124, 0, 0.4);
+    background: #E67300;
 }
 
 .btn-logout:active {
     transform: translateY(0);
+}
+
+/* Food Courts Styles */
+.food-courts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Food Court Card Styles - Modern UI */
+.food-court-card {
+    background-color: var(--bg-primary);
+    border-radius: 24px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.food-court-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #F57C00 0%, #FF9800 100%);
+}
+
+.food-court-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(245, 124, 0, 0.15);
+}
+
+.food-court-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+}
+
+.food-court-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.food-court-header .status {
+    padding: 0.375rem 0.875rem;
+    border-radius: 16px;
+    font-size: 0.688rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.food-court-header .status.active {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+    color: #F57C00;
+    box-shadow: 0 2px 8px rgba(245, 124, 0, 0.15);
+}
+
+.food-court-info {
+    margin-bottom: 1.25rem;
+    background-color: #FAFAFA;
+    padding: 1rem;
+    border-radius: 16px;
+}
+
+.food-court-info p {
+    color: var(--text-secondary);
+    font-size: 0.813rem;
+    margin-bottom: 0.625rem;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    line-height: 1.5;
+}
+
+.food-court-info p:last-child {
+    margin-bottom: 0;
+}
+
+.food-court-info i {
+    color: #F57C00;
+    width: 1.125rem;
+    font-size: 0.938rem;
+}
+
+.food-court-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.food-court-details p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.food-court-details i {
+    color: var(--primary-color);
+    width: 20px;
+}
+
+.food-court-facilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.facility-tag {
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    color: #1976d2;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Section Header - Modern Style */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+}
+
+.section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    color: var(--text-primary);
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+.section-header h2 i {
+    color: #F57C00;
+    font-size: 1.75rem;
+    filter: drop-shadow(0 2px 4px rgba(245, 124, 0, 0.2));
+}
+
+/* Add Button - Modern Style */
+.add-btn {
+    background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+    color: white;
+    padding: 0.875rem 1.75rem;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.938rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 16px rgba(245, 124, 0, 0.35);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.02em;
+}
+
+.add-btn:hover {
+    background: linear-gradient(135deg, #E67300 0%, #F57C00 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(245, 124, 0, 0.45);
+}
+
+.add-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.35);
+}
+
+.add-btn i {
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.food-court-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.edit-btn, .assign-btn, .delete-btn {
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-btn, .qr-btn, .assign-btn, .delete-btn {
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-btn {
+    background-color: #FFF3E0;
+    color: #F57C00;
+    flex: 1;
+    border-radius: 12px;
+}
+
+.edit-btn:hover {
+    background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.25);
+}
+
+.qr-btn {
+    background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+    color: white;
+    flex: 1;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(245, 124, 0, 0.25);
+}
+
+.qr-btn:hover {
+    background: linear-gradient(135deg, #E67300 0%, #F57C00 100%);
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.35);
+}
+
+.assign-btn {
+    background-color: #FFF3E0;
+    color: #F57C00;
+    flex: 1;
+    border-radius: 12px;
+}
+
+.assign-btn:hover {
+    background: linear-gradient(135deg, #F57C00 0%, #FF9800 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.25);
+}
+
+.delete-btn {
+    background-color: #FFEBEE;
+    color: #D32F2F;
+    padding: 0.6rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.delete-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #D32F2F 0%, #C62828 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.25);
+}
+
+.delete-btn:disabled {
+    background-color: #E0E0E0;
+    color: #9E9E9E;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.delete-btn:disabled:hover {
+    background-color: #E0E0E0;
+    color: #9E9E9E;
+    box-shadow: none;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    padding: 2rem 0;
+}
+
+.modal-content {
+    background-color: var(--bg-primary);
+    margin: auto;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #F57C00 #E0E0E0;
+}
+
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #E0E0E0;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #F57C00;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #E67300;
+}
+
+.modal-large {
+    max-width: 900px;
+}
+
+.modal-content h2 {
+    margin: 0 0 1.5rem 0;
+    padding-right: 2rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.close {
+    color: var(--text-secondary);
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 1;
+    line-height: 1;
+}
+
+.close:hover {
+    color: var(--text-primary);
+}
+
+/* Hawker Management in Modal */
+.hawker-add-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.add-hawker-form {
+    background-color: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 2px solid #E0E0E0;
+}
+
+.add-hawker-form .form-header {
+    margin-bottom: 1.25rem;
+}
+
+.add-hawker-form .form-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.15rem;
+}
+
+.add-hawker-form .form-header h3 i {
+    color: #F57C00;
+}
+
+.add-hawker-form .form-description {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    line-height: 1.5;
+}
+
+.add-hawker-form .form-description i {
+    color: #2196F3;
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+
+.add-hawker-form .required {
+    color: #D32F2F;
+}
+
+.add-hawker-form .input-hint {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+}
+
+.add-hawker-form .input-hint i {
+    color: #F57C00;
+    font-size: 0.75rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #F57C00;
+    box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* Success Overlay Custom Scrollbar */
+.success-overlay {
+    scrollbar-width: thin;
+    scrollbar-color: #F57C00 rgba(0, 0, 0, 0.2);
+}
+
+.success-overlay::-webkit-scrollbar {
+    width: 8px;
+}
+
+.success-overlay::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.success-overlay::-webkit-scrollbar-thumb {
+    background: #F57C00;
+    border-radius: 4px;
+}
+
+.success-overlay::-webkit-scrollbar-thumb:hover {
+    background: #E67300;
+}
+
+.hawkers-management {
+    margin-bottom: 2rem;
+}
+
+.hawkers-management h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.hawker-card-item {
+    background-color: #FFFFFF;
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.hawker-card-item:hover {
+    background-color: #FFF8F0;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.12);
+}
+
+.hawker-card-item.available {
+    border-left-color: #4CAF50;
+}
+
+.hawker-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.hawker-info-block {
+    flex: 1;
+}
+
+.hawker-info-block h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.hawker-actions-inline {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.edit-hawker-btn {
+    background-color: #E3F2FD;
+    color: #1976D2;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.edit-hawker-btn:hover {
+    background-color: #1976D2;
+    color: white;
+}
+
+.hawker-category-tag {
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.category-asian {
+    background-color: #FFF3E0;
+    color: #F57C00;
+}
+
+.category-western {
+    background-color: #E3F2FD;
+    color: #1976D2;
+}
+
+.category-drinks {
+    background-color: #E8F5E9;
+    color: #388E3C;
+}
+
+.category-dessert {
+    background-color: #F3E5F5;
+    color: #7B1FA2;
+}
+
+.category-snacks {
+    background-color: #FFF9C4;
+    color: #F57F17;
+}
+
+.hawker-description {
+    margin: 0.75rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.hawker-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.hawker-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.hawker-meta i {
+    color: var(--primary-color);
+}
+
+.remove-btn {
+    background-color: #FFEBEE;
+    color: #D32F2F;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.remove-btn:hover {
+    background-color: #D32F2F;
+    color: white;
+}
+
+.add-hawker-btn {
+    background-color: #E8F5E9;
+    color: #388E3C;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.add-hawker-btn:hover {
+    background-color: #388E3C;
+    color: white;
+}
+
+/* Operating Hours Time Picker - Updated v2 */
+.hours-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.time-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.time-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.time-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.time-picker:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15);
+}
+
+.time-picker select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    text-align: center;
+    min-width: 60px;
+    outline: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+                      linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+    background-position: calc(100% - 10px) center, calc(100% - 5px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 25px;
+    transition: all 0.2s ease;
+}
+
+.time-picker select:hover {
+    background-color: rgba(255, 107, 53, 0.05);
+    border-radius: 8px;
+}
+
+.time-picker select:focus {
+    background-color: rgba(255, 107, 53, 0.1);
+    border-radius: 8px;
+}
+
+.time-separator {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* iOS-style select options */
+.time-picker select option {
+    padding: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.facilities-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.hawkers-list .hawker-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.hawkers-list .hawker-item:last-child {
+    margin-bottom: 0;
+}
+
+.hawker-category {
+    padding: 0.3rem 0.8rem;
+    background-color: #E3F2FD;
+    color: #1976D2;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.save-btn, .cancel-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.cancel-btn {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.cancel-btn:hover {
+    background-color: #E0E0E0;
 }
 
 /* Responsive */
@@ -498,6 +1350,28 @@
     
     .info-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .food-courts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1.5rem 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+    
+    .modal {
+        padding: 1rem 0;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .add-hawker-form {
+        padding: 1rem;
     }
 }
 
@@ -526,5 +1400,30 @@
     
     .admin-nav .nav-item i {
         font-size: 1.2rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        padding: 1.25rem 0.875rem;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.25rem;
+        padding-right: 2.5rem;
+    }
+    
+    .close {
+        right: 1rem;
+        top: 1rem;
+        font-size: 24px;
+    }
+    
+    .section-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .add-btn {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.85rem;
     }
 }

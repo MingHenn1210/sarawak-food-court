@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Database - Hawker Registration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f5f7fa;
+        }
+        h1 {
+            color: #F57C00;
+            margin-bottom: 2rem;
+        }
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2C3E50;
+            border-bottom: 2px solid #F57C00;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #f5f7fa;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status.active {
+            background: #e8f5e9;
+            color: #388E3C;
+        }
+        .status.inactive {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #7F8C8D;
+        }
+        .error {
+            background: #ffebee;
+            color: #d32f2f;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #388E3C;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .count {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #F57C00;
+            margin: 0.5rem 0;
+        }
+        button {
+            background: linear-gradient(135deg, #F57C00, #F57C00);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 124, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Database Check - Hawker Registration Status</h1>
+    
+    <div class="section">
+        <h2>📊 Summary</h2>
+        <div id="summary">
+            <div class="loading">Loading database information...</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>👥 Registered Users (Hawkers)</h2>
+        <div id="hawkers">
+            <div class="loading">Loading hawkers...</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>� Registered Food Courts</h2>
+        <div id="foodCourts">
+            <div class="loading">Loading food courts...</div>
+        </div>
+    </div>
+
+    <button onclick="refreshData()">🔄 Refresh Data</button>
+
+    <script>
+        let supabase;
+
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
+
+        // Load all data
+        async function loadData() {
+            if (!initializeSupabase()) {
+                document.getElementById('summary').innerHTML = '<div class="error">Failed to connect to database</div>';
+                return;
+            }
+
+            try {
+                // Get users count
+                const { count: totalUsers, error: usersCountError } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true });
+
+                const { count: hawkerCount, error: hawkerCountError } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('role', 'hawker');
+
+                const { count: stallCount, error: stallCountError } = await supabase
+                    .from('hawker_stalls')
+                    .select('*', { count: 'exact', head: true });
+
+                const { count: foodCourtCount, error: foodCourtCountError } = await supabase
+                    .from('food_courts')
+                    .select('*', { count: 'exact', head: true });
+
+                // Display summary
+                document.getElementById('summary').innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <div style="color: #7F8C8D; font-size: 0.9rem;">Total Users</div>
+                            <div class="count">${totalUsers || 0}</div>
+                        </div>
+                        <div>
+                            <div style="color: #7F8C8D; font-size: 0.9rem;">Hawker Users</div>
+                            <div class="count">${hawkerCount || 0}</div>
+                        </div>
+                        <div>
+                            <div style="color: #7F8C8D; font-size: 0.9rem;">Food Courts</div>
+                            <div class="count">${foodCourtCount || 0}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Get all users with role 'hawker'
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('role', 'hawker')
+                    .order('created_at', { ascending: false });
+
+                if (usersError) throw usersError;
+
+                // Display users
+                if (users && users.length > 0) {
+                    let usersHTML = `
+                        <div class="success">✅ Found ${users.length} registered hawker(s)</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Full Name</th>
+                                    <th>Email/Username</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    users.forEach(user => {
+                        const createdDate = new Date(user.created_at).toLocaleString();
+                        usersHTML += `
+                            <tr>
+                                <td><strong>${user.full_name}</strong></td>
+                                <td>${user.email}</td>
+                                <td>${user.phone || 'N/A'}</td>
+                                <td><span class="status ${user.status}">${user.status}</span></td>
+                                <td>${createdDate}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    usersHTML += `
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('hawkers').innerHTML = usersHTML;
+                } else {
+                    document.getElementById('hawkers').innerHTML = '<div class="error">❌ No hawker users found in the database</div>';
+                }
+
+                // Get all food courts
+                const { data: foodCourts, error: foodCourtsError } = await supabase
+                    .from('food_courts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (foodCourtsError) throw foodCourtsError;
+
+                // Display food courts
+                if (foodCourts && foodCourts.length > 0) {
+                    let foodCourtsHTML = `
+                        <div class="success">✅ Found ${foodCourts.length} registered food court(s)</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Address</th>
+                                    <th>Capacity</th>
+                                    <th>Operating Hours</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    foodCourts.forEach(fc => {
+                        const createdDate = new Date(fc.created_at).toLocaleString();
+                        const openingTime = fc.opening_time || 'N/A';
+                        const closingTime = fc.closing_time || 'N/A';
+                        
+                        foodCourtsHTML += `
+                            <tr>
+                                <td><strong>${fc.name}</strong></td>
+                                <td>${fc.address}</td>
+                                <td>${fc.capacity || 'N/A'}</td>
+                                <td>${openingTime} - ${closingTime}</td>
+                                <td><span class="status ${fc.status}">${fc.status}</span></td>
+                                <td>${createdDate}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    foodCourtsHTML += `
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('foodCourts').innerHTML = foodCourtsHTML;
+                } else {
+                    document.getElementById('foodCourts').innerHTML = '<div class="error">❌ No food courts found in the database</div>';
+                }
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('summary').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('hawkers').innerHTML = `<div class="error">Error loading hawkers: ${error.message}</div>`;
+                document.getElementById('foodCourts').innerHTML = `<div class="error">Error loading food courts: ${error.message}</div>`;
+            }
+        }
+
+        function refreshData() {
+            document.getElementById('summary').innerHTML = '<div class="loading">Loading database information...</div>';
+            document.getElementById('hawkers').innerHTML = '<div class="loading">Loading hawkers...</div>';
+            document.getElementById('foodCourts').innerHTML = '<div class="loading">Loading food courts...</div>';
+            loadData();
+        }
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>

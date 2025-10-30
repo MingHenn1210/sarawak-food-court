@@ -162,13 +162,13 @@
     
     <!-- Bottom Navigation -->
     <nav class="hawker-nav admin-nav">
+        <a href="food-courts.html" class="nav-item">
+            <i class="fas fa-building"></i>
+            <span>Food Courts</span>
+        </a>
         <a href="dashboard.html" class="nav-item">
             <i class="fas fa-chart-line"></i>
             <span>Dashboard</span>
-        </a>
-        <a href="hawkers.html" class="nav-item active">
-            <i class="fas fa-store"></i>
-            <span>Hawkers</span>
         </a>
         <a href="subscriptions.html" class="nav-item">
             <i class="fas fa-credit-card"></i>
@@ -182,120 +182,71 @@
     
     <script src="../js/app.js"></script>
     <script>
+        let allUsers = [];
         let hawkers = [];
-        let plans = [];
-        let currentFilter = 'all';
-        
+        let foodCourts = [];
+        let currentHawker = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
             loadData();
         });
-        
+
         function checkAuth() {
             const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
             if (!sessionData) {
                 window.location.href = 'login.html';
-                return;
             }
         }
-        
+
         async function loadData() {
             try {
-                const [usersResponse, plansResponse] = await Promise.all([
+                const [usersRes, foodCourtsRes] = await Promise.all([
                     fetch('../data/users.json'),
-                    fetch('../data/plans.json')
+                    fetch('../data/food-courts.json')
                 ]);
-                
-                const users = await usersResponse.json();
-                hawkers = users.filter(u => u.type === 'hawker');
-                plans = await plansResponse.json();
-                
+                allUsers = await usersRes.json();
+                foodCourts = await foodCourtsRes.json();
+                hawkers = allUsers.filter(u => u.type === 'hawker');
                 displayHawkers();
-                loadPlanOptions();
             } catch (error) {
                 console.error('Error loading data:', error);
+                const container = document.getElementById('hawkersList');
+                container.innerHTML = `<div class="empty-state"><p>Error loading data. Please try again later.</p></div>`;
             }
         }
-        
-        function filterHawkers(filter) {
-            currentFilter = filter;
-            
-            // Update active tab
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            displayHawkers();
-        }
-        
+
         function displayHawkers() {
             const container = document.getElementById('hawkersList');
-            
-            let filteredHawkers = hawkers;
-            
-            if (currentFilter !== 'all') {
-                filteredHawkers = hawkers.filter(h => h.subscription?.status === currentFilter);
-            }
-            
-            if (filteredHawkers.length === 0) {
+            if (hawkers.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <i class="fas fa-store"></i>
-                        <p>No hawkers found</p>
-                    </div>
-                `;
+                        <i class="fas fa-store-slash"></i>
+                        <p>No hawkers found.</p>
+                    </div>`;
                 return;
             }
-            
-            container.innerHTML = filteredHawkers.map(hawker => {
-                const status = hawker.subscription?.status || 'unknown';
-                const plan = plans.find(p => p.id === hawker.subscription?.planId);
-                
+
+            container.innerHTML = hawkers.map(hawker => {
+                const foodCourt = foodCourts.find(fc => fc.id === hawker.foodCourtId);
                 return `
-                    <div class="hawker-card ${status}">
+                    <div class="hawker-card">
                         <div class="hawker-header">
                             <div class="hawker-info">
-                                <div class="hawker-icon">
-                                    <i class="fas fa-store-alt"></i>
-                                </div>
+                                <div class="hawker-icon"><i class="fas fa-store-alt"></i></div>
                                 <div>
                                     <h3>${hawker.stallName}</h3>
                                     <p class="hawker-owner">${hawker.name}</p>
                                 </div>
                             </div>
-                            <span class="status-badge status-${status}">
-                                ${status.charAt(0).toUpperCase() + status.slice(1)}
-                            </span>
                         </div>
-                        
                         <div class="hawker-details">
-                            <div class="detail-row">
-                                <i class="fas fa-envelope"></i>
-                                <span>${hawker.email}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-phone"></i>
-                                <span>${hawker.phone}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-credit-card"></i>
-                                <span>${hawker.subscription?.planName || 'No Plan'} ${plan ? `(RM ${plan.price}/mo)` : ''}</span>
-                            </div>
-                            <div class="detail-row">
-                                <i class="fas fa-calendar"></i>
-                                <span>Expires: ${hawker.subscription?.endDate || 'N/A'}</span>
-                            </div>
+                            <div class="detail-row"><i class="fas fa-envelope"></i><span>${hawker.email}</span></div>
+                            <div class="detail-row"><i class="fas fa-phone"></i><span>${hawker.phone}</span></div>
+                            <div class="detail-row"><i class="fas fa-map-marker-alt"></i><span>${foodCourt ? foodCourt.name : 'Not Assigned'}</span></div>
                         </div>
-                        
                         <div class="hawker-actions">
-                            <button class="btn-icon" onclick="viewHawkerDetails(${hawker.id})" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn-icon" onclick="showChangePlanModal(${hawker.id})" title="Change Plan">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon btn-danger" onclick="deleteHawker(${hawker.id})" title="Delete">
+                            <button class="btn-icon btn-danger" onclick="confirmDeleteHawker(${hawker.id})" title="Delete Hawker">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -303,223 +254,36 @@
                 `;
             }).join('');
         }
-        
-        function viewHawkerDetails(hawkerId) {
+
+        function confirmDeleteHawker(hawkerId) {
             const hawker = hawkers.find(h => h.id === hawkerId);
             if (!hawker) return;
-            
-            const plan = plans.find(p => p.id === hawker.subscription?.planId);
-            
-            document.getElementById('hawkerDetails').innerHTML = `
-                <div class="detail-section">
-                    <h3><i class="fas fa-store"></i> Stall Information</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Stall Name</label>
-                            <p>${hawker.stallName}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Owner Name</label>
-                            <p>${hawker.name}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Email</label>
-                            <p>${hawker.email}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Phone</label>
-                            <p>${hawker.phone}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Stall ID</label>
-                            <p>${hawker.stallId}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Joined Date</label>
-                            <p>${hawker.joinedDate || 'N/A'}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="detail-section">
-                    <h3><i class="fas fa-credit-card"></i> Subscription Details</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Current Plan</label>
-                            <p style="color: ${plan?.color}; font-weight: 700;">${hawker.subscription?.planName || 'None'}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Monthly Price</label>
-                            <p>RM ${plan?.price || 0}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Status</label>
-                            <p><span class="status-badge status-${hawker.subscription?.status}">${hawker.subscription?.status || 'Unknown'}</span></p>
-                        </div>
-                        <div class="info-item">
-                            <label>Start Date</label>
-                            <p>${hawker.subscription?.startDate || 'N/A'}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>End Date</label>
-                            <p>${hawker.subscription?.endDate || 'N/A'}</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Auto Renew</label>
-                            <p>${hawker.subscription?.autoRenew ? 'Yes' : 'No'}</p>
-                        </div>
-                    </div>
-                </div>
-                
-                ${plan ? `
-                <div class="detail-section">
-                    <h3><i class="fas fa-list"></i> Plan Features</h3>
-                    <ul class="features-list">
-                        ${plan.features.map(f => `<li><i class="fas fa-check"></i> ${f}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-            `;
-            
-            document.getElementById('hawkerModal').classList.add('show');
-        }
-        
-        function showChangePlanModal(hawkerId) {
-            const hawker = hawkers.find(h => h.id === hawkerId);
-            if (!hawker) return;
-            
-            document.getElementById('hawkerId').value = hawkerId;
-            document.getElementById('planSelect').value = hawker.subscription?.planId || '';
-            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('autoRenew').checked = hawker.subscription?.autoRenew || false;
-            
-            document.getElementById('planModal').classList.add('show');
-        }
-        
-        function loadPlanOptions() {
-            const select = document.getElementById('planSelect');
-            select.innerHTML = plans.map(plan => `
-                <option value="${plan.id}">${plan.name} - RM ${plan.price}/month</option>
-            `).join('');
-            
-            // Also load for add hawker form
-            const newPlanSelect = document.getElementById('newPlan');
-            if (newPlanSelect) {
-                newPlanSelect.innerHTML = plans.map(plan => `
-                    <option value="${plan.id}">${plan.name} - RM ${plan.price}/month</option>
-                `).join('');
+
+            if (confirm(`Are you sure you want to delete the hawker "${hawker.stallName}"?\nThis action cannot be undone.`)) {
+                deleteHawker(hawkerId);
             }
         }
-        
-        function showAddHawkerModal() {
-            document.getElementById('addHawkerForm').reset();
-            document.getElementById('newStartDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('addHawkerModal').classList.add('show');
-        }
-        
-        function closeAddHawkerModal() {
-            document.getElementById('addHawkerModal').classList.remove('show');
-        }
-        
-        function addHawker(event) {
-            event.preventDefault();
-            
-            const planId = parseInt(document.getElementById('newPlan').value);
-            const plan = plans.find(p => p.id === planId);
-            const startDate = document.getElementById('newStartDate').value;
-            
-            // Calculate end date (30 days from start)
-            const start = new Date(startDate);
-            const end = new Date(start);
-            end.setDate(end.getDate() + 30);
-            
-            const newHawker = {
-                id: Date.now(),
-                type: 'hawker',
-                stallId: document.getElementById('newStallId').value,
-                password: document.getElementById('newPassword').value,
-                name: document.getElementById('newOwnerName').value,
-                stallName: document.getElementById('newStallName').value,
-                email: document.getElementById('newEmail').value,
-                phone: document.getElementById('newPhone').value,
-                subscription: {
-                    planId: plan.id,
-                    planName: plan.name,
-                    startDate: startDate,
-                    endDate: end.toISOString().split('T')[0],
-                    status: 'active',
-                    autoRenew: document.getElementById('newAutoRenew').checked
-                },
-                joinedDate: new Date().toISOString().split('T')[0],
-                status: 'active'
-            };
-            
-            hawkers.push(newHawker);
-            showToast(`${newHawker.stallName} added successfully!`);
-            closeAddHawkerModal();
-            displayHawkers();
-        }
-        
-        function changePlan(event) {
-            event.preventDefault();
-            
-            const hawkerId = parseInt(document.getElementById('hawkerId').value);
-            const planId = parseInt(document.getElementById('planSelect').value);
-            const startDate = document.getElementById('startDate').value;
-            const autoRenew = document.getElementById('autoRenew').checked;
-            
-            const hawker = hawkers.find(h => h.id === hawkerId);
-            const plan = plans.find(p => p.id === planId);
-            
-            if (hawker && plan) {
-                // Calculate end date (30 days from start)
-                const start = new Date(startDate);
-                const end = new Date(start);
-                end.setDate(end.getDate() + 30);
-                
-                hawker.subscription = {
-                    planId: plan.id,
-                    planName: plan.name,
-                    startDate: startDate,
-                    endDate: end.toISOString().split('T')[0],
-                    status: 'active',
-                    autoRenew: autoRenew
-                };
-                
-                hawker.status = 'active';
-                
-                showToast(`Plan updated to ${plan.name} successfully!`);
-                closePlanModal();
-                displayHawkers();
-            }
-        }
-        
+
         function deleteHawker(hawkerId) {
-            const hawker = hawkers.find(h => h.id === hawkerId);
-            if (!hawker) return;
-            
-            if (confirm(`Are you sure you want to delete ${hawker.stallName}?\n\nThis action cannot be undone and will remove all their data.`)) {
-                hawkers = hawkers.filter(h => h.id !== hawkerId);
-                showToast(`${hawker.stallName} has been deleted successfully.`);
+            const initialUserCount = allUsers.length;
+            allUsers = allUsers.filter(u => u.id !== hawkerId);
+
+            if (allUsers.length < initialUserCount) {
+                hawkers = allUsers.filter(u => u.type === 'hawker');
                 displayHawkers();
+                showToast('Hawker deleted successfully.', 'success');
+                console.log('Simulating update of users.json:', allUsers);
+            } else {
+                showToast('Could not find hawker to delete.', 'error');
             }
         }
-        
-        function closeModal() {
-            document.getElementById('hawkerModal').classList.remove('show');
-        }
-        
-        function closePlanModal() {
-            document.getElementById('planModal').classList.remove('show');
-        }
-        
-        function showToast(message) {
+
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            toast.className = `toast ${type} show`;
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
             document.body.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 100);
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);

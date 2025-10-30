@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Courts Management - Sarawak Food Court</title>
+    <link rel="stylesheet" href="../css/main.css?v=18">
+    <link rel="stylesheet" href="../css/hawker.css?v=18">
+    <link rel="stylesheet" href="../css/admin.css?v=18">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-dashboard">
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-utensils"></i>
+            <span>Food Courts Management</span>
+        </div>
+        <div class="nav-actions">
+            <button class="user-btn admin-user-btn" onclick="window.location.href='profile.html'">
+                <i class="fas fa-user-circle"></i>
+                <span id="adminName">Admin</span>
+            </button>
+            <button class="logout-btn-mini" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="dashboard-content">
+        <!-- Food Courts List -->
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2><i class="fas fa-building"></i> Food Courts & Hawker Management</h2>
+                <button class="add-btn" onclick="showAddFoodCourtModal()">
+                    <i class="fas fa-plus"></i> Add Food Court
+                </button>
+            </div>
+            <div class="food-courts-grid" id="foodCourtsList">
+                <!-- Food courts will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Add/Edit Food Court Modal -->
+        <div id="foodCourtModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeFoodCourtModal()">&times;</span>
+                <h2 id="modalTitle">Add New Food Court</h2>
+                <form id="foodCourtForm" onsubmit="saveFoodCourt(event)">
+                    <input type="hidden" id="foodCourtId">
+                    <div class="form-group">
+                        <label for="name">Food Court Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">Capacity (Number of Stalls)</label>
+                        <input type="number" id="capacity" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Operating Hours</label>
+                        <div class="hours-container">
+                            <div class="time-picker-group">
+                                <label class="time-label">Open</label>
+                                <div class="time-picker">
+                                    <select id="openHour" required>
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-separator">:</span>
+                                    <select id="openMinute" required>
+                                        <option value="">MM</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="time-picker-group">
+                                <label class="time-label">Close</label>
+                                <div class="time-picker">
+                                    <select id="closeHour" required>
+                                        <option value="">HH</option>
+                                    </select>
+                                    <span class="time-separator">:</span>
+                                    <select id="closeMinute" required>
+                                        <option value="">MM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn">Save Food Court</button>
+                        <button type="button" class="cancel-btn" onclick="closeFoodCourtModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Assign Hawkers Modal -->
+        <div id="assignHawkersModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close" onclick="closeAssignHawkersModal()">&times;</span>
+                <h2><i class="fas fa-store"></i> Manage Hawkers for <span id="foodCourtName"></span></h2>
+                
+                <!-- Add New Hawker Form -->
+                <div class="hawker-add-section">
+                    <button class="add-btn" onclick="showAddHawkerForm()">
+                        <i class="fas fa-plus"></i> Register New Hawker
+                    </button>
+                </div>
+
+                <!-- Add Hawker Form (Hidden by default) -->
+                <div id="addHawkerForm" class="add-hawker-form" style="display: none;">
+                    <div class="form-header">
+                        <h3><i class="fas fa-user-plus"></i> Create Hawker Account</h3>
+                        <p class="form-description">
+                            <i class="fas fa-info-circle"></i> Create a new hawker account for this food court. The hawker will use the phone number and password to login.
+                        </p>
+                    </div>
+                    <form onsubmit="saveNewHawker(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hawkerName">Stall Name <span class="required">*</span></label>
+                                <input type="text" id="hawkerName" placeholder="e.g., Ah Keat Laksa" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hawkerCategory">Category <span class="required">*</span></label>
+                                <select id="hawkerCategory" required>
+                                    <option value="">-- Select Category --</option>
+                                    <option value="asian">Asian Cuisine</option>
+                                    <option value="western">Western Food</option>
+                                    <option value="drinks">Drinks & Beverages</option>
+                                    <option value="dessert">Dessert</option>
+                                    <option value="snacks">Snacks</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hawkerOwner">Owner Full Name <span class="required">*</span></label>
+                                <input type="text" id="hawkerOwner" placeholder="e.g., Tan Ah Keat" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hawkerPhone">Phone Number (Login Username) <span class="required">*</span></label>
+                                <input type="tel" id="hawkerPhone" placeholder="e.g., 0123456789" required pattern="[0-9]{10,11}" title="10-11 digits">
+                                <small class="input-hint">
+                                    <i class="fas fa-key"></i> This will be the hawker's login username
+                                </small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="hawkerPassword">Password <span class="required">*</span></label>
+                                <input type="password" id="hawkerPassword" placeholder="Minimum 6 characters" required minlength="6">
+                                <small class="input-hint">
+                                    <i class="fas fa-lock"></i> Hawker will use this to login
+                                </small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="hawkerDescription">Stall Description <span class="required">*</span></label>
+                            <textarea id="hawkerDescription" rows="3" placeholder="Brief description of the stall and cuisine" required></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="save-btn">
+                                <i class="fas fa-user-check"></i> Create Hawker Account
+                            </button>
+                            <button type="button" class="cancel-btn" onclick="hideAddHawkerForm()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Existing Hawkers List -->
+                <div class="hawkers-management">
+                    <h3>Registered Hawkers</h3>
+                    <div class="hawkers-list" id="hawkersList">
+                        <!-- Hawkers will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button onclick="closeAssignHawkersModal()" class="cancel-btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Hawker Modal -->
+        <div id="editHawkerModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close" id="closeEditHawkerBtn">&times;</span>
+                <h2><i class="fas fa-edit"></i> Edit Hawker Details</h2>
+                
+                <form id="editHawkerForm">
+                    <input type="hidden" id="editHawkerId">
+                    
+                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Basic Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editHawkerName">Stall Name</label>
+                            <input type="text" id="editHawkerName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editHawkerCategory">Category</label>
+                            <select id="editHawkerCategory" required>
+                                <option value="asian">Asian Cuisine</option>
+                                <option value="western">Western Food</option>
+                                <option value="drinks">Drinks & Beverages</option>
+                                <option value="dessert">Dessert</option>
+                                <option value="snacks">Snacks</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editHawkerDescription">Description</label>
+                        <textarea id="editHawkerDescription" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editHawkerRating">Rating</label>
+                            <input type="number" id="editHawkerRating" step="0.1" min="0" max="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="editHawkerItemCount">Number of Menu Items</label>
+                            <input type="number" id="editHawkerItemCount" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editHawkerImage">Image URL</label>
+                        <input type="url" id="editHawkerImage">
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="editHawkerIsOpen">
+                            Currently Open
+                        </label>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="save-btn" id="updateHawkerBtn">
+                            <i class="fas fa-save"></i> Update Hawker
+                        </button>
+                        <button type="button" class="delete-btn" id="deleteHawkerBtn">
+                            <i class="fas fa-trash"></i> Delete Hawker
+                        </button>
+                        <button type="button" class="cancel-btn" id="cancelEditHawkerBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- QR Code Generator Modal -->
+        <div id="qrCodeModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeQRCodeModal()">&times;</span>
+                <h2><i class="fas fa-qrcode"></i> Generate QR Code for <span id="qrFoodCourtName"></span></h2>
+                
+                <div class="qr-section">
+                    <div class="form-group">
+                        <label for="tableNumber">Table Number</label>
+                        <input type="number" id="tableNumber" placeholder="Enter table number" required min="1" max="100">
+                    </div>
+                    
+                    <button onclick="generateQR()" class="save-btn" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-qrcode"></i> Generate QR Code
+                    </button>
+                </div>
+
+                <div id="qrCodeDisplay" style="display: none; margin-top: 2rem;">
+                    <h3 style="text-align: center; margin-bottom: 1rem;">QR Code Generated</h3>
+                    <div style="text-align: center; padding: 1.5rem; background: white; border-radius: 12px;">
+                        <img id="qrCodeImage" src="" alt="QR Code" style="max-width: 300px; width: 100%;">
+                    </div>
+                    <div style="margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                        <p><strong>Food Court:</strong> <span id="qrDisplayFoodCourt"></span></p>
+                        <p><strong>Table Number:</strong> <span id="qrDisplayTable"></span></p>
+                        <p><strong>QR Code URL:</strong> <a id="qrCodeLink" href="#" target="_blank" style="color: var(--primary-color); word-break: break-all;"></a></p>
+                    </div>
+                    <div class="form-actions" style="margin-top: 1rem;">
+                        <button onclick="downloadQRCode()" class="save-btn">
+                            <i class="fas fa-download"></i> Download QR Code
+                        </button>
+                        <button onclick="printQRCode()" class="save-btn" style="background: linear-gradient(135deg, #4CAF50, #45a049);">
+                            <i class="fas fa-print"></i> Print QR Code
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 1.5rem;">
+                    <button onclick="closeQRCodeModal()" class="cancel-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Bottom Navigation -->
+    <nav class="hawker-nav admin-nav">
+        <a href="food-courts.html" class="nav-item active">
+            <i class="fas fa-building"></i>
+            <span>Food Courts</span>
+        </a>
+        <a href="dashboard.html" class="nav-item">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="subscriptions.html" class="nav-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Plans</span>
+        </a>
+        <a href="advertisements.html" class="nav-item">
+            <i class="fas fa-bullhorn"></i>
+            <span>Ads</span>
+        </a>
+    </nav>
+    
+    <script>
+        console.log('🔧 Food Courts Script Loading - Version 18 (Fixed Focus Lock)');
+        console.log('📍 Script start time:', new Date().toISOString());
+        
+        let currentFoodCourt = null;
+        let foodCourts = [];
+        let supabase;
+        let deleteButtonCooldownTimer = null; // Store cooldown timer reference
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                alert('Failed to connect to database. Please refresh the page.');
+                return false;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Supabase first
+            if (initializeSupabase()) {
+                checkAuth();
+                loadFoodCourts();
+                populateTimeSelectors();
+            }
+        });
+        
+        function populateTimeSelectors() {
+            // Populate hours (00-23)
+            const openHour = document.getElementById('openHour');
+            const closeHour = document.getElementById('closeHour');
+            
+            for (let i = 0; i < 24; i++) {
+                const hour = i.toString().padStart(2, '0');
+                openHour.innerHTML += `<option value="${hour}">${hour}</option>`;
+                closeHour.innerHTML += `<option value="${hour}">${hour}</option>`;
+            }
+            
+            // Populate minutes (00, 15, 30, 45)
+            const openMinute = document.getElementById('openMinute');
+            const closeMinute = document.getElementById('closeMinute');
+            const minutes = ['00', '15', '30', '45'];
+            
+            minutes.forEach(min => {
+                openMinute.innerHTML += `<option value="${min}">${min}</option>`;
+                closeMinute.innerHTML += `<option value="${min}">${min}</option>`;
+            });
+        }
+        
+        function getTimeString(hour, minute) {
+            return `${hour}:${minute}`;
+        }
+        
+        function parseTimeString(timeStr) {
+            const [hour, minute] = timeStr.split(':');
+            return { hour, minute };
+        }
+        
+        function checkAuth() {
+            const sessionData = localStorage.getItem('adminSession') || sessionStorage.getItem('adminSession');
+            if (!sessionData) {
+                window.location.href = 'login.html';
+                return;
+            }
+            const session = JSON.parse(sessionData);
+            document.getElementById('adminName').textContent = session.name;
+        }
+        
+        async function loadFoodCourts() {
+            try {
+                // Load from Supabase with hawker stall count
+                const { data, error } = await supabase
+                    .from('food_courts')
+                    .select(`
+                        *,
+                        hawker_stalls:hawker_stalls(count)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Transform data to match expected format
+                foodCourts = data.map(fc => ({
+                    id: fc.id,
+                    name: fc.name,
+                    address: fc.address,
+                    capacity: fc.capacity,
+                    operating_hours: {
+                        open: fc.opening_time,
+                        close: fc.closing_time
+                    },
+                    status: fc.status,
+                    hawker_stalls: new Array(fc.hawker_stalls[0]?.count || 0), // Create array with length equal to count
+                    created_at: fc.created_at,
+                    updated_at: fc.updated_at
+                }));
+
+                displayFoodCourts();
+            } catch (error) {
+                console.error('Error loading food courts:', error);
+                alert('Error loading food courts from database. Please try again.');
+            }
+        }
+        
+        function displayFoodCourts() {
+            const container = document.getElementById('foodCourtsList');
+            container.innerHTML = foodCourts.map(fc => `
+                <div class="food-court-card">
+                    <div class="food-court-header">
+                        <h3>${fc.name}</h3>
+                        <span class="status ${fc.status}">${fc.status}</span>
+                    </div>
+                    <div class="food-court-details">
+                        <p><i class="fas fa-map-marker-alt"></i> ${fc.address}</p>
+                        <p><i class="fas fa-clock"></i> ${fc.operating_hours.open} - ${fc.operating_hours.close}</p>
+                        <p><i class="fas fa-store"></i> ${fc.hawker_stalls.length} / ${fc.capacity} stalls occupied</p>
+                    </div>
+                    <div class="food-court-actions">
+                        <button onclick="editFoodCourt('${fc.id}')" class="edit-btn">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button onclick="generateQRCode('${fc.id}')" class="qr-btn">
+                            <i class="fas fa-qrcode"></i> QR Code
+                        </button>
+                        <button onclick="showAssignHawkers('${fc.id}')" class="assign-btn">
+                            <i class="fas fa-store"></i> Manage Hawkers (${fc.hawker_stalls.length})
+                        </button>
+                        <button onclick="deleteFoodCourt('${fc.id}')" class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showAddFoodCourtModal() {
+            currentFoodCourt = null;
+            document.getElementById('modalTitle').textContent = 'Add New Food Court';
+            document.getElementById('foodCourtForm').reset();
+            document.getElementById('foodCourtModal').style.display = 'block';
+        }
+        
+        function closeFoodCourtModal() {
+            document.getElementById('foodCourtModal').style.display = 'none';
+        }
+        
+        function editFoodCourt(id) {
+            currentFoodCourt = foodCourts.find(fc => fc.id === id);
+            if (!currentFoodCourt) return;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Food Court';
+            document.getElementById('foodCourtId').value = currentFoodCourt.id;
+            document.getElementById('name').value = currentFoodCourt.name;
+            document.getElementById('address').value = currentFoodCourt.address;
+            document.getElementById('capacity').value = currentFoodCourt.capacity;
+            
+            // Parse and set time values
+            const openTime = parseTimeString(currentFoodCourt.operating_hours.open);
+            const closeTime = parseTimeString(currentFoodCourt.operating_hours.close);
+            
+            document.getElementById('openHour').value = openTime.hour;
+            document.getElementById('openMinute').value = openTime.minute;
+            document.getElementById('closeHour').value = closeTime.hour;
+            document.getElementById('closeMinute').value = closeTime.minute;
+            
+            document.getElementById('foodCourtModal').style.display = 'block';
+        }
+        
+        async function saveFoodCourt(event) {
+            event.preventDefault();
+            
+            const openHour = document.getElementById('openHour').value;
+            const openMinute = document.getElementById('openMinute').value;
+            const closeHour = document.getElementById('closeHour').value;
+            const closeMinute = document.getElementById('closeMinute').value;
+            
+            const formData = {
+                name: document.getElementById('name').value,
+                address: document.getElementById('address').value,
+                capacity: parseInt(document.getElementById('capacity').value),
+                opening_time: getTimeString(openHour, openMinute),
+                closing_time: getTimeString(closeHour, closeMinute),
+                status: 'active'
+            };
+            
+            try {
+                if (currentFoodCourt) {
+                    // Update existing food court in Supabase
+                    const { data, error } = await supabase
+                        .from('food_courts')
+                        .update(formData)
+                        .eq('id', currentFoodCourt.id)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    console.log('✅ Food court updated:', data);
+                    alert('Food court updated successfully!');
+                } else {
+                    // Add new food court to Supabase
+                    const { data, error } = await supabase
+                        .from('food_courts')
+                        .insert([formData])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    console.log('✅ Food court created:', data);
+                    alert('Food court created successfully!');
+                }
+                
+                // Reload food courts from database
+                await loadFoodCourts();
+                closeFoodCourtModal();
+            } catch (error) {
+                console.error('Error saving food court:', error);
+                alert('Error saving food court: ' + error.message);
+            }
+        }
+        
+        async function showAssignHawkers(foodCourtId) {
+            currentFoodCourt = foodCourts.find(fc => fc.id === foodCourtId);
+            if (!currentFoodCourt) return;
+            
+            // Set food court name in modal
+            document.getElementById('foodCourtName').textContent = currentFoodCourt.name;
+            
+            // Load hawker stalls from Supabase for this food court
+            try {
+                const { data: stallsData, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        *,
+                        users:hawker_id (
+                            full_name,
+                            email,
+                            phone
+                        )
+                    `)
+                    .eq('food_court_id', foodCourtId)
+                    .eq('status', 'active');
+                
+                if (error) throw error;
+                
+                // Display registered hawkers
+                const assignedContainer = document.getElementById('hawkersList');
+                
+                if (!stallsData || stallsData.length === 0) {
+                    assignedContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No hawkers registered yet. Click "Register New Hawker" to add hawkers to this food court.</p>';
+                } else {
+                    assignedContainer.innerHTML = stallsData.map(stall => `
+                        <div class="hawker-card-item">
+                            <div class="hawker-card-header">
+                                <div class="hawker-info-block">
+                                    <h4>${stall.stall_name}</h4>
+                                    <span class="hawker-category-tag category-${stall.cuisine_type}">${stall.cuisine_type}</span>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        Owner: ${stall.users?.full_name || 'N/A'}
+                                    </p>
+                                </div>
+                                <div class="hawker-actions-inline">
+                                    <button class="edit-hawker-btn" onclick="editHawker('${stall.id}')" title="Edit hawker">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="hawker-description">${stall.description || 'No description'}</p>
+                            <div class="hawker-meta">
+                                <span><i class="fas fa-envelope"></i> ${stall.users?.email || 'N/A'}</span>
+                                <span><i class="fas fa-phone"></i> ${stall.users?.phone || 'N/A'}</span>
+                                <span><i class="fas fa-${stall.status === 'active' ? 'check-circle' : 'times-circle'}"></i> ${stall.status}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                console.log('✅ Hawkers loaded for food court:', stallsData);
+            } catch (error) {
+                console.error('❌ Error loading hawkers:', error);
+                document.getElementById('hawkersList').innerHTML = `
+                    <p style="text-align: center; color: #f44336; padding: 2rem;">
+                        Error loading hawkers. Please try again.
+                    </p>
+                `;
+            }
+            
+            document.getElementById('assignHawkersModal').style.display = 'block';
+        }
+        
+        function showAddHawkerForm() {
+            document.getElementById('addHawkerForm').style.display = 'block';
+        }
+        
+        function hideAddHawkerForm() {
+            document.getElementById('addHawkerForm').style.display = 'none';
+            document.querySelector('#addHawkerForm form').reset();
+        }
+        
+        function showHawkerCreatedSuccess(stallName, ownerName, phone, password, foodCourtName) {
+            // Create success overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'success-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+                overflow-y: auto;
+                padding: 2rem 0;
+            `;
+            
+            const successBox = document.createElement('div');
+            successBox.style.cssText = `
+                background: white;
+                border-radius: 20px;
+                padding: 2rem 1.5rem;
+                max-width: 550px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+                animation: slideUp 0.5s ease;
+                margin: auto;
+            `;
+            
+            successBox.innerHTML = `
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #4CAF50, #45a049); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+                        <i class="fas fa-check" style="color: white; font-size: 2.5rem;"></i>
+                    </div>
+                    <h2 style="color: #2C3E50; margin-bottom: 0.5rem; font-size: 1.5rem;">
+                        <i class="fas fa-user-check"></i> Hawker Account Created!
+                    </h2>
+                    <p style="color: #7F8C8D; font-size: 0.9rem;">The hawker can now login with these credentials</p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #F57C00, #FF9800); border-radius: 15px; padding: 1.25rem; margin-bottom: 1.25rem; color: white;">
+                    <h3 style="margin: 0 0 0.875rem 0; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-store"></i> Stall Information
+                    </h3>
+                    <div style="background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 0.875rem; margin-bottom: 0.625rem;">
+                        <p style="margin: 0 0 0.375rem 0; font-size: 0.8rem; opacity: 0.9;">Stall Name</p>
+                        <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">${stallName}</p>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 0.875rem; margin-bottom: 0.625rem;">
+                        <p style="margin: 0 0 0.375rem 0; font-size: 0.8rem; opacity: 0.9;">Owner Name</p>
+                        <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">${ownerName}</p>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 0.875rem;">
+                        <p style="margin: 0 0 0.375rem 0; font-size: 0.8rem; opacity: 0.9;">Food Court</p>
+                        <p style="margin: 0; font-size: 1.1rem; font-weight: 600;">${foodCourtName}</p>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 1.25rem; margin-bottom: 1.25rem; border: 2px solid #e9ecef;">
+                    <h3 style="margin: 0 0 0.875rem 0; font-size: 1rem; color: #2C3E50; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-key"></i> Login Credentials
+                    </h3>
+                    <div style="margin-bottom: 0.875rem;">
+                        <p style="margin: 0 0 0.25rem 0; font-size: 0.8rem; color: #7F8C8D;">Username (Phone)</p>
+                        <div style="background: white; border: 2px solid #4CAF50; border-radius: 8px; padding: 0.625rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                            <code style="font-size: 1rem; color: #2C3E50; font-weight: 600; word-break: break-all;">${phone}</code>
+                            <button onclick="navigator.clipboard.writeText('${phone}'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Copied!'" style="background: #4CAF50; color: white; border: none; padding: 0.375rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="margin: 0 0 0.25rem 0; font-size: 0.8rem; color: #7F8C8D;">Password</p>
+                        <div style="background: white; border: 2px solid #4CAF50; border-radius: 8px; padding: 0.625rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                            <code style="font-size: 1rem; color: #2C3E50; font-weight: 600; word-break: break-all;">${password}</code>
+                            <button onclick="navigator.clipboard.writeText('${password}'); this.innerHTML='<i class=\\'fas fa-check\\'></i> Copied!'" style="background: #4CAF50; color: white; border: none; padding: 0.375rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <p style="margin: 0.875rem 0 0 0; font-size: 0.8rem; color: #7F8C8D; text-align: center;">
+                        <i class="fas fa-info-circle"></i> Make sure to share these credentials with the hawker
+                    </p>
+                </div>
+                
+                <button onclick="this.parentElement.parentElement.remove(); document.body.style.overflow = '';" style="width: 100%; background: linear-gradient(135deg, #2196F3, #1976D2); color: white; border: none; padding: 1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3); transition: all 0.3s ease;">
+                    <i class="fas fa-times-circle"></i> Close
+                </button>
+            `;
+            
+            overlay.appendChild(successBox);
+            document.body.appendChild(overlay);
+            
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
+            
+            // Restore body scroll when modal is closed
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    overlay.remove();
+                    document.body.style.overflow = '';
+                }
+            });
+            
+            // Add animations
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(50px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `;
+            if (!document.getElementById('admin-success-animations')) {
+                style.id = 'admin-success-animations';
+                document.head.appendChild(style);
+            }
+        }
+        
+        async function saveNewHawker(event) {
+            event.preventDefault();
+            
+            if (!currentFoodCourt) {
+                alert('No food court selected!');
+                return;
+            }
+            
+            try {
+                const stallName = document.getElementById('hawkerName').value;
+                const category = document.getElementById('hawkerCategory').value;
+                const ownerName = document.getElementById('hawkerOwner').value;
+                const phone = document.getElementById('hawkerPhone').value;
+                const password = document.getElementById('hawkerPassword').value;
+                const description = document.getElementById('hawkerDescription').value;
+                
+                // Generate email from phone number
+                const email = phone + '@hawker.local';
+                
+                console.log('📝 Creating hawker with:', {
+                    phone: phone,
+                    email: email,
+                    password: password,
+                    fullName: ownerName,
+                    stallName: stallName
+                });
+                
+                // Check if phone number already exists
+                const { data: existingUser, error: checkError } = await supabase
+                    .from('users')
+                    .select('phone')
+                    .eq('phone', phone);
+                
+                if (existingUser && existingUser.length > 0) {
+                    alert('⚠️ This phone number is already registered. Please use a different phone number.');
+                    return;
+                }
+                
+                // Step 1: Create user account for hawker
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .insert([{
+                        email: email,
+                        password_hash: password, // In production, this should be hashed on the server
+                        full_name: ownerName,
+                        phone: phone,
+                        role: 'hawker',
+                        status: 'active'
+                    }])
+                    .select()
+                    .single();
+                
+                if (userError) {
+                    console.error('❌ Error creating user:', userError);
+                    throw new Error('Failed to create hawker account: ' + userError.message);
+                }
+                
+                console.log('✅ Hawker user created:', userData);
+                console.log('📱 Login credentials - Phone:', userData.phone, 'Password:', password);
+                
+                // Step 2: Create hawker stall linked to the food court
+                const { data: stallData, error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .insert([{
+                        food_court_id: currentFoodCourt.id,
+                        hawker_id: userData.id,
+                        stall_name: stallName,
+                        cuisine_type: category,
+                        description: description,
+                        status: 'active'
+                    }])
+                    .select()
+                    .single();
+                
+                if (stallError) {
+                    console.error('Error creating stall:', stallError);
+                    throw new Error('Failed to create hawker stall: ' + stallError.message);
+                }
+                
+                console.log('✅ Hawker stall created:', stallData);
+                
+                // Show success message with credentials
+                showHawkerCreatedSuccess(stallName, ownerName, phone, password, currentFoodCourt.name);
+                
+                hideAddHawkerForm();
+                
+                // Reload food courts to reflect the new hawker
+                await loadFoodCourts();
+                
+                // Refresh the hawkers modal
+                await showAssignHawkers(currentFoodCourt.id);
+                
+            } catch (error) {
+                console.error('❌ Error saving hawker:', error);
+                alert('Error saving hawker: ' + error.message);
+            }
+        }
+        
+        async function removeHawkerFromFoodCourt(stallId, skipConfirm = false) {
+            console.log('🗑️ Attempting to remove hawker stall:', stallId);
+            
+            if (!skipConfirm && !confirm('Remove this hawker from the food court? This will permanently delete their stall and account.')) {
+                return;
+            }
+            
+            try {
+                // First, get the hawker_id and food_court_id before deleting the stall
+                const { data: stallData, error: fetchError } = await supabase
+                    .from('hawker_stalls')
+                    .select('hawker_id, food_court_id')
+                    .eq('id', stallId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                console.log('Stall data:', stallData);
+                
+                // Delete the stall
+                const { error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .delete()
+                    .eq('id', stallId);
+                
+                if (stallError) throw stallError;
+                
+                console.log('✅ Hawker stall deleted');
+                
+                // Delete the user account as well
+                if (stallData.hawker_id) {
+                    const { error: userError } = await supabase
+                        .from('users')
+                        .delete()
+                        .eq('id', stallData.hawker_id);
+                    
+                    if (userError) {
+                        console.warn('⚠️ Could not delete user account:', userError);
+                        // Don't throw error here, stall is already deleted
+                    } else {
+                        console.log('✅ Hawker user account deleted');
+                    }
+                }
+                
+                alert('Hawker removed successfully!');
+                
+                // Reload food courts to update the counts
+                await loadFoodCourts();
+                
+                // Refresh the hawkers list if the modal is still open
+                if (currentFoodCourt && document.getElementById('assignHawkersModal').style.display === 'block') {
+                    await showAssignHawkers(currentFoodCourt.id);
+                }
+                
+                return true; // Success
+            } catch (error) {
+                console.error('❌ Error removing hawker:', error);
+                alert('Error removing hawker: ' + error.message);
+                return false; // Failure
+            }
+        }
+        
+        // Delete hawker function with cooldown
+        async function deleteHawkerFromEdit() {
+            console.log('🗑️ DELETE FUNCTION CALLED!');
+            
+            const deleteBtn = document.getElementById('deleteHawkerBtn');
+            const stallId = document.getElementById('editHawkerId').value;
+            console.log('Stall ID:', stallId);
+            
+            if (!stallId) {
+                alert('No hawker selected for deletion!');
+                return;
+            }
+            
+            if (!confirm('⚠️ FINAL WARNING ⚠️\n\nAre you sure you want to DELETE this hawker?\n\nThis will PERMANENTLY:\n• Remove their stall\n• Delete their account\n• Remove all associated data\n\nThis action CANNOT be undone!\n\nClick OK to proceed with deletion.')) {
+                console.log('Delete cancelled by user');
+                return;
+            }
+            
+            console.log('🗑️ Proceeding with deletion for stall ID:', stallId);
+            
+            // Disable button and show processing state
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+            
+            try {
+                // Get hawker info before deleting
+                const { data: stallData, error: fetchError } = await supabase
+                    .from('hawker_stalls')
+                    .select('hawker_id, food_court_id, stall_name')
+                    .eq('id', stallId)
+                    .single();
+                
+                if (fetchError) throw fetchError;
+                
+                console.log('Stall data:', stallData);
+                
+                // Delete the stall
+                const { error: stallError } = await supabase
+                    .from('hawker_stalls')
+                    .delete()
+                    .eq('id', stallId);
+                
+                if (stallError) throw stallError;
+                
+                console.log('✅ Hawker stall deleted');
+                
+                // Delete the user account
+                if (stallData.hawker_id) {
+                    const { error: userError } = await supabase
+                        .from('users')
+                        .delete()
+                        .eq('id', stallData.hawker_id);
+                    
+                    if (userError) {
+                        console.warn('⚠️ Could not delete user account:', userError);
+                    } else {
+                        console.log('✅ Hawker user account deleted');
+                    }
+                }
+                
+                // Show success message
+                alert(`✅ Success!\n\n"${stallData.stall_name}" has been permanently removed from the system.`);
+                
+                // Close modals first
+                closeEditHawkerModal();
+                closeAssignHawkersModal();
+                
+                // Reload food courts
+                await loadFoodCourts();
+                
+                // Start 10-second cooldown (button will be reset when modal reopens)
+                console.log('✅ Delete operation completed successfully');
+                
+            } catch (error) {
+                console.error('❌ Error removing hawker:', error);
+                alert('❌ Error removing hawker:\n\n' + error.message);
+                
+                // Re-enable button on error
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Hawker';
+                deleteBtn.disabled = false;
+            }
+        }
+        
+        function closeAssignHawkersModal() {
+            document.getElementById('assignHawkersModal').style.display = 'none';
+            hideAddHawkerForm();
+        }
+        
+        async function editHawker(stallId) {
+            try {
+                // Load hawker stall data from Supabase
+                const { data: stallData, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        *,
+                        users:hawker_id (
+                            full_name,
+                            email,
+                            phone
+                        )
+                    `)
+                    .eq('id', stallId)
+                    .single();
+                
+                if (error) throw error;
+                
+                if (!stallData) {
+                    alert('Hawker not found!');
+                    return;
+                }
+                
+                // Populate form with hawker data
+                document.getElementById('editHawkerId').value = stallData.id;
+                document.getElementById('editHawkerName').value = stallData.stall_name;
+                document.getElementById('editHawkerCategory').value = stallData.cuisine_type;
+                document.getElementById('editHawkerDescription').value = stallData.description || '';
+                document.getElementById('editHawkerRating').value = 0; // We can add rating later
+                document.getElementById('editHawkerItemCount').value = 0; // We can count menu items later
+                document.getElementById('editHawkerImage').value = stallData.image_url || '';
+                document.getElementById('editHawkerIsOpen').checked = stallData.status === 'active';
+                
+                // Reset delete button state
+                const deleteBtn = document.getElementById('deleteHawkerBtn');
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Hawker';
+                    deleteBtn.style.cursor = 'pointer';
+                }
+                
+                // Close the manage hawkers modal and open edit modal
+                document.getElementById('assignHawkersModal').style.display = 'none';
+                document.getElementById('editHawkerModal').style.display = 'block';
+                
+                console.log('✅ Hawker data loaded for editing:', stallData);
+            } catch (error) {
+                console.error('❌ Error loading hawker for editing:', error);
+                alert('Error loading hawker data: ' + error.message);
+            }
+        }
+        
+        function closeEditHawkerModal() {
+            // Clear any cooldown timers
+            if (deleteButtonCooldownTimer) {
+                clearInterval(deleteButtonCooldownTimer);
+                deleteButtonCooldownTimer = null;
+            }
+            
+            // Reset delete button
+            const deleteBtn = document.getElementById('deleteHawkerBtn');
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Hawker';
+            }
+            
+            document.getElementById('editHawkerModal').style.display = 'none';
+            
+            // Reopen the manage hawkers modal if there's a current food court
+            if (currentFoodCourt) {
+                document.getElementById('assignHawkersModal').style.display = 'block';
+            }
+        }
+        
+        async function updateHawker(event) {
+            event.preventDefault();
+            
+            const stallId = document.getElementById('editHawkerId').value;
+            
+            if (!stallId) {
+                alert('Hawker ID not found!');
+                return;
+            }
+            
+            try {
+                // Update hawker stall data in Supabase
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .update({
+                        stall_name: document.getElementById('editHawkerName').value,
+                        cuisine_type: document.getElementById('editHawkerCategory').value,
+                        description: document.getElementById('editHawkerDescription').value,
+                        image_url: document.getElementById('editHawkerImage').value || null,
+                        status: document.getElementById('editHawkerIsOpen').checked ? 'active' : 'inactive'
+                    })
+                    .eq('id', stallId)
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                console.log('✅ Hawker updated:', data);
+                alert('Hawker updated successfully!');
+                
+                closeEditHawkerModal();
+                
+                // Reload food courts to reflect changes
+                await loadFoodCourts();
+                
+                // Refresh the hawkers modal if there's a current food court
+                if (currentFoodCourt) {
+                    await showAssignHawkers(currentFoodCourt.id);
+                }
+            } catch (error) {
+                console.error('❌ Error updating hawker:', error);
+                alert('Error updating hawker: ' + error.message);
+            }
+        }
+        
+        function generateQRCode(foodCourtId) {
+            const foodCourt = foodCourts.find(fc => fc.id === foodCourtId);
+            if (!foodCourt) return;
+            
+            currentFoodCourt = foodCourt;
+            document.getElementById('qrFoodCourtName').textContent = foodCourt.name;
+            document.getElementById('tableNumber').value = '';
+            document.getElementById('qrCodeDisplay').style.display = 'none';
+            document.getElementById('qrCodeModal').style.display = 'block';
+        }
+        
+        function closeQRCodeModal() {
+            document.getElementById('qrCodeModal').style.display = 'none';
+        }
+        
+        function generateQR() {
+            const tableNumber = document.getElementById('tableNumber').value;
+            
+            if (!tableNumber || tableNumber < 1) {
+                alert('Please enter a valid table number!');
+                return;
+            }
+            
+            if (!currentFoodCourt) {
+                alert('Food court not selected!');
+                return;
+            }
+            
+            // Create URL with food court and table info
+            const baseUrl = window.location.origin;
+            const menuUrl = `${baseUrl}/customer/menu.html?foodcourt=${currentFoodCourt.id}&table=${tableNumber}`;
+            
+            // Generate QR code using API
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
+            
+            // Display QR code
+            document.getElementById('qrCodeImage').src = qrCodeUrl;
+            document.getElementById('qrDisplayFoodCourt').textContent = currentFoodCourt.name;
+            document.getElementById('qrDisplayTable').textContent = tableNumber;
+            document.getElementById('qrCodeLink').textContent = menuUrl;
+            document.getElementById('qrCodeLink').href = menuUrl;
+            document.getElementById('qrCodeDisplay').style.display = 'block';
+        }
+        
+        function downloadQRCode() {
+            const qrImage = document.getElementById('qrCodeImage');
+            const tableNumber = document.getElementById('tableNumber').value;
+            const foodCourtName = currentFoodCourt.name.replace(/\s+/g, '_');
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = qrImage.src;
+            link.download = `QR_${foodCourtName}_Table_${tableNumber}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function printQRCode() {
+            const qrImage = document.getElementById('qrCodeImage').src;
+            const tableNumber = document.getElementById('tableNumber').value;
+            const foodCourtName = currentFoodCourt.name;
+            
+            // Create print window
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>QR Code - ${foodCourtName} - Table ${tableNumber}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            text-align: center;
+                            padding: 20px;
+                        }
+                        h1 {
+                            color: #FF6B35;
+                            margin-bottom: 10px;
+                        }
+                        h2 {
+                            color: #2C3E50;
+                            margin-bottom: 20px;
+                        }
+                        img {
+                            margin: 20px 0;
+                            border: 2px solid #E0E0E0;
+                            padding: 10px;
+                            border-radius: 12px;
+                        }
+                        .info {
+                            margin-top: 20px;
+                            font-size: 18px;
+                            color: #666;
+                        }
+                        @media print {
+                            body {
+                                padding: 0;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Sarawak Food Court</h1>
+                    <h2>${foodCourtName}</h2>
+                    <img src="${qrImage}" alt="QR Code">
+                    <div class="info">
+                        <p><strong>Table Number: ${tableNumber}</strong></p>
+                        <p>Scan to view menu and place orders</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            
+            // Print after image loads
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        }
+        
+        async function saveHawkerAssignments() {
+            // This function is no longer needed but kept for compatibility
+            closeAssignHawkersModal();
+        }
+        
+        async function deleteFoodCourt(id) {
+            if (!confirm('Are you sure you want to delete this food court?')) return;
+            
+            try {
+                // Delete from Supabase
+                const { error } = await supabase
+                    .from('food_courts')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                
+                console.log('✅ Food court deleted:', id);
+                alert('Food court deleted successfully!');
+                
+                // Reload food courts from database
+                await loadFoodCourts();
+            } catch (error) {
+                console.error('Error deleting food court:', error);
+                alert('Error deleting food court: ' + error.message);
+            }
+        }
+        
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('adminSession');
+                sessionStorage.removeItem('adminSession');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Initialize event listeners when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Setting up event listeners...');
+            
+            // Edit hawker modal event listeners
+            const deleteHawkerBtn = document.getElementById('deleteHawkerBtn');
+            const closeEditBtn = document.getElementById('closeEditHawkerBtn');
+            const cancelEditBtn = document.getElementById('cancelEditHawkerBtn');
+            const editHawkerForm = document.getElementById('editHawkerForm');
+            const updateHawkerBtn = document.getElementById('updateHawkerBtn');
+            
+            if (deleteHawkerBtn) {
+                deleteHawkerBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🗑️ Delete button clicked via event listener!');
+                    deleteHawkerFromEdit();
+                });
+                console.log('✅ Delete button event listener attached');
+            } else {
+                console.warn('⚠️ Delete button not found!');
+            }
+            
+            if (closeEditBtn) {
+                closeEditBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeEditHawkerModal();
+                });
+                console.log('✅ Close button event listener attached');
+            }
+            
+            if (cancelEditBtn) {
+                cancelEditBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    closeEditHawkerModal();
+                });
+                console.log('✅ Cancel button event listener attached');
+            }
+            
+            if (editHawkerForm) {
+                editHawkerForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('📝 Form submitted via event listener');
+                    updateHawker(e);
+                });
+                console.log('✅ Form submit event listener attached');
+            }
+            
+            console.log('✅ All event listeners initialized!');
+        });
+        
+        // Debug: Verify function exists
+        console.log('✅ deleteHawkerFromEdit function defined:', typeof deleteHawkerFromEdit);
+        console.log('✅ removeHawkerFromFoodCourt function defined:', typeof removeHawkerFromFoodCourt);
+        console.log('✅ Script loaded completely at:', new Date().toISOString());
+    </script>
+    
+    <!-- Supabase Integration - REMOVED TO AVOID CONFLICTS -->
+    <!-- <script src="../js/supabase-food-courts.js"></script> -->
+</body>
+</html>
