@@ -7,13 +7,23 @@
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/hawker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="hawker-dashboard">
     <!-- Top Navigation -->
     <nav class="top-nav">
-        <div class="nav-brand">
-            <i class="fas fa-utensils"></i>
-            <span>Menu Management</span>
+        <div class="nav-brand" style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-utensils"></i>
+                <span style="font-size: 0.95em; font-weight: 500;">Menu</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <span id="stallName" style="font-size: 1.1em; font-weight: 600;">Loading...</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <span id="foodCourtName" style="font-size: 0.85em; opacity: 0.75;">Loading...</span>
+            </div>
         </div>
     </nav>
     
@@ -140,19 +150,67 @@
         let menuItems = [];
         let editingItemId = null;
         let myStallId = null;
+        let supabase;
+        let hawkerStall = null;
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadMenu();
+            if (initializeSupabase()) {
+                checkAuth();
+                loadMenu();
+            }
         });
         
-        function checkAuth() {
+        async function checkAuth() {
             const sessionData = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
             if (!sessionData) {
                 window.location.href = 'login.html';
                 return;
             }
             session = JSON.parse(sessionData);
+            
+            // Load hawker stall information from Supabase to get food court name
+            try {
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        *,
+                        food_courts:food_court_id (
+                            name,
+                            address
+                        )
+                    `)
+                    .eq('hawker_id', session.userId)
+                    .eq('status', 'active')
+                    .single();
+                
+                if (error) throw error;
+                
+                hawkerStall = data;
+                // Display food court name and stall name
+                document.getElementById('foodCourtName').textContent = data.food_courts?.name || 'Food Court';
+                document.getElementById('stallName').textContent = data.stall_name || session.stallName || 'My Stall';
+                
+                console.log('✅ Hawker stall loaded:', hawkerStall);
+            } catch (error) {
+                console.error('❌ Error loading hawker stall:', error);
+                document.getElementById('foodCourtName').textContent = 'Food Court';
+                document.getElementById('stallName').textContent = session.stallName || 'My Stall';
+            }
         }
         
         async function loadMenu() {

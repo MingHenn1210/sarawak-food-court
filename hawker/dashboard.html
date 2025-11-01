@@ -13,9 +13,17 @@
 <body class="hawker-dashboard">
     <!-- Top Navigation -->
     <nav class="top-nav">
-        <div class="nav-brand">
-            <i class="fas fa-store-alt"></i>
-            <span id="stallName">Loading...</span>
+        <div class="nav-brand" style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-home"></i>
+                <span style="font-size: 0.95em; font-weight: 500;">Dashboard</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <span id="stallName" style="font-size: 1.1em; font-weight: 600;">Loading...</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <span id="foodCourtName" style="font-size: 0.85em; opacity: 0.75;">Loading...</span>
+            </div>
         </div>
         <div class="nav-actions">
             <div class="user-menu">
@@ -173,12 +181,14 @@
                 if (error) throw error;
                 
                 hawkerStall = data;
-                document.getElementById('stallName').textContent = data.stall_name;
+                document.getElementById('foodCourtName').textContent = data.food_courts?.name || 'Food Court';
+                document.getElementById('stallName').textContent = data.stall_name || session.stallName || 'My Stall';
                 document.getElementById('userName').textContent = session.name || session.stallName;
                 
                 console.log('✅ Hawker stall loaded:', hawkerStall);
             } catch (error) {
                 console.error('❌ Error loading hawker stall:', error);
+                document.getElementById('foodCourtName').textContent = 'Food Court';
                 document.getElementById('stallName').textContent = session.stallName || 'My Stall';
                 document.getElementById('userName').textContent = session.name || 'Hawker';
             }

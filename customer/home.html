@@ -77,23 +77,102 @@
     
     <script src="../js/app.js"></script>
     <script src="../js/customer.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        let supabase;
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
+        
         // Initialize page
-        document.addEventListener('DOMContentLoaded', () => {
-            // Get table number from URL or localStorage
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize Supabase
+            initializeSupabase();
+            
+            // Get table number and food court from URL or localStorage
             const urlParams = new URLSearchParams(window.location.search);
             const table = urlParams.get('table') || localStorage.getItem('tableNumber') || '1';
+            const foodCourtId = urlParams.get('foodcourt') || localStorage.getItem('foodCourtId');
+            
+            // Store for later use
             localStorage.setItem('tableNumber', table);
+            if (foodCourtId) {
+                localStorage.setItem('foodCourtId', foodCourtId);
+            }
+            
             document.getElementById('tableNumber').textContent = table;
             
             // Update cart count
             updateCartCount();
             
-            // Load stalls
-            loadStalls();
+            // Load stalls (from Supabase if food court ID is provided, otherwise from JSON)
+            if (foodCourtId && supabase) {
+                await loadStallsFromDatabase(foodCourtId);
+            } else {
+                await loadStalls();
+            }
         });
         
         let currentCategory = 'all';
+        
+        // Load stalls from Supabase database (for specific food court)
+        async function loadStallsFromDatabase(foodCourtId) {
+            try {
+                console.log('📍 Loading stalls for food court:', foodCourtId);
+                
+                // Fetch hawker stalls from database for this food court
+                const { data: stalls, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        id,
+                        stall_name,
+                        cuisine_type,
+                        description,
+                        image_url,
+                        status,
+                        users:hawker_id (
+                            full_name
+                        )
+                    `)
+                    .eq('food_court_id', foodCourtId)
+                    .eq('status', 'active');
+
+                if (error) throw error;
+
+                // Transform to match expected format
+                const transformedStalls = stalls.map(stall => ({
+                    id: stall.id,
+                    name: stall.stall_name,
+                    description: stall.description || 'Delicious food awaits!',
+                    category: stall.cuisine_type,
+                    image: stall.image_url || 'https://via.placeholder.com/400x300?text=Food+Stall',
+                    rating: 4.5, // Default rating for now
+                    isOpen: stall.status === 'active',
+                    itemCount: 0 // Will be updated when we add menu items
+                }));
+
+                console.log('✅ Loaded stalls from database:', transformedStalls);
+                displayStalls(transformedStalls);
+                
+            } catch (error) {
+                console.error('Error loading stalls from database:', error);
+                // Fallback to JSON if database fails
+                await loadStalls();
+            }
+        }
         
         async function loadStalls() {
             try {

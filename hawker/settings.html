@@ -7,12 +7,22 @@
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/hawker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="hawker-dashboard">
     <nav class="top-nav">
-        <div class="nav-brand">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
+        <div class="nav-brand" style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-cog"></i>
+                <span style="font-size: 0.95em; font-weight: 500;">Settings</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+                <span id="stallNameHeader" style="font-size: 1.1em; font-weight: 600;">Loading...</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                <span id="foodCourtName" style="font-size: 0.85em; opacity: 0.75;">Loading...</span>
+            </div>
         </div>
     </nav>
     
@@ -60,6 +70,13 @@
                     </label>
                 </div>
             </div>
+            
+            <div class="settings-section">
+                <h2><i class="fas fa-sign-out-alt"></i> Account</h2>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
     </main>
     
@@ -85,43 +102,159 @@
     <script src="../js/app.js"></script>
     <script>
         let session = null;
+        let supabase;
+        let hawkerStall = null;
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            try {
+                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
+                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase connected successfully!');
+                return true;
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+                return false;
+            }
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            loadSettings();
+            if (initializeSupabase()) {
+                checkAuth();
+                loadSettings();
+            }
         });
         
-        function checkAuth() {
+        async function checkAuth() {
             const sessionData = localStorage.getItem('hawkerSession') || sessionStorage.getItem('hawkerSession');
             if (!sessionData) {
                 window.location.href = 'login.html';
                 return;
             }
             session = JSON.parse(sessionData);
-        }
-        
-        async function loadSettings() {
+            
+            // Load hawker stall information from Supabase to get food court name
             try {
-                const response = await fetch('../data/stalls.json');
-                const stalls = await response.json();
-                const myStall = stalls.find(s => s.name === session.stallName);
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        *,
+                        food_courts:food_court_id (
+                            name,
+                            address
+                        )
+                    `)
+                    .eq('hawker_id', session.userId)
+                    .eq('status', 'active')
+                    .single();
                 
-                if (myStall) {
-                    document.getElementById('stallName').value = myStall.name;
-                    document.getElementById('stallDescription').value = myStall.description;
-                    document.getElementById('isOpen').checked = myStall.isOpen;
-                    if (myStall.qrCode) {
-                        document.getElementById('qrPreview').src = myStall.qrCode;
-                        document.getElementById('qrUrl').value = myStall.qrCode;
-                    }
-                }
+                if (error) throw error;
+                
+                hawkerStall = data;
+                // Display food court name and stall name
+                document.getElementById('foodCourtName').textContent = data.food_courts?.name || 'Food Court';
+                document.getElementById('stallNameHeader').textContent = data.stall_name || session.stallName || 'My Stall';
+                
+                console.log('✅ Hawker stall loaded:', hawkerStall);
             } catch (error) {
-                console.error('Error loading settings:', error);
+                console.error('❌ Error loading hawker stall:', error);
+                document.getElementById('foodCourtName').textContent = 'Food Court';
+                document.getElementById('stallNameHeader').textContent = session.stallName || 'My Stall';
             }
         }
         
-        function saveStallInfo() {
-            showToast('Stall information updated!');
+        async function loadSettings() {
+            // Wait for hawkerStall to be loaded
+            if (!hawkerStall) {
+                setTimeout(loadSettings, 100);
+                return;
+            }
+            
+            try {
+                // Load stall information from Supabase
+                document.getElementById('stallName').value = hawkerStall.stall_name || '';
+                document.getElementById('stallDescription').value = hawkerStall.description || '';
+                document.getElementById('isOpen').checked = hawkerStall.is_open || false;
+                
+                if (hawkerStall.qr_code_url) {
+                    document.getElementById('qrPreview').src = hawkerStall.qr_code_url;
+                    document.getElementById('qrUrl').value = hawkerStall.qr_code_url;
+                }
+                
+                console.log('✅ Settings loaded');
+            } catch (error) {
+                console.error('❌ Error loading settings:', error);
+            }
+        }
+        
+        async function saveStallInfo() {
+            if (!hawkerStall) {
+                showToast('Error: Stall information not loaded', 'error');
+                return;
+            }
+            
+            const newStallName = document.getElementById('stallName').value.trim();
+            const newDescription = document.getElementById('stallDescription').value.trim();
+            
+            if (!newStallName) {
+                showToast('Stall name cannot be empty', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                btn.disabled = true;
+                
+                // Update in Supabase
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .update({
+                        stall_name: newStallName,
+                        description: newDescription,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', hawkerStall.id)
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                // Update local hawkerStall object
+                hawkerStall.stall_name = newStallName;
+                hawkerStall.description = newDescription;
+                
+                // Update header display
+                document.getElementById('stallNameHeader').textContent = newStallName;
+                
+                // Update session
+                session.stallName = newStallName;
+                const storageKey = localStorage.getItem('hawkerSession') ? 'hawkerSession' : 'hawkerSession';
+                if (localStorage.getItem('hawkerSession')) {
+                    localStorage.setItem('hawkerSession', JSON.stringify(session));
+                } else {
+                    sessionStorage.setItem('hawkerSession', JSON.stringify(session));
+                }
+                
+                console.log('✅ Stall information updated:', data);
+                showToast('Stall information updated successfully!');
+                
+                // Restore button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+            } catch (error) {
+                console.error('❌ Error saving stall info:', error);
+                showToast('Failed to update stall information: ' + error.message, 'error');
+                
+                // Restore button
+                event.target.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                event.target.disabled = false;
+            }
         }
         
         function updateQR() {
@@ -132,10 +265,26 @@
             }
         }
         
-        function showToast(message) {
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear session data
+                localStorage.removeItem('hawkerSession');
+                sessionStorage.removeItem('hawkerSession');
+                
+                // Redirect to login page
+                window.location.href = 'login.html';
+            }
+        }
+        
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'error' ? 'exclamation-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 
+                        'check-circle';
+            
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             document.body.appendChild(toast);
             
             setTimeout(() => toast.classList.add('show'), 100);

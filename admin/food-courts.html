@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code Manager -->
+    <script src="../js/qr-code-manager.js"></script>
 </head>
 <body class="admin-dashboard">
     <!-- Top Navigation -->
@@ -188,71 +190,53 @@
             </div>
         </div>
 
-        <!-- Edit Hawker Modal -->
+        <!-- View Hawker Details Modal -->
         <div id="editHawkerModal" class="modal">
             <div class="modal-content modal-large">
                 <span class="close" id="closeEditHawkerBtn">&times;</span>
-                <h2><i class="fas fa-edit"></i> Edit Hawker Details</h2>
+                <h2><i class="fas fa-info-circle"></i> Hawker Details</h2>
                 
-                <form id="editHawkerForm">
+                <div id="hawkerDetailsView">
                     <input type="hidden" id="editHawkerId">
                     
-                    <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Basic Information</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editHawkerName">Stall Name</label>
-                            <input type="text" id="editHawkerName" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="editHawkerCategory">Category</label>
-                            <select id="editHawkerCategory" required>
-                                <option value="asian">Asian Cuisine</option>
-                                <option value="western">Western Food</option>
-                                <option value="drinks">Drinks & Beverages</option>
-                                <option value="dessert">Dessert</option>
-                                <option value="snacks">Snacks</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="editHawkerDescription">Description</label>
-                        <textarea id="editHawkerDescription" rows="3" required></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="editHawkerRating">Rating</label>
-                            <input type="number" id="editHawkerRating" step="0.1" min="0" max="5">
-                        </div>
-                        <div class="form-group">
-                            <label for="editHawkerItemCount">Number of Menu Items</label>
-                            <input type="number" id="editHawkerItemCount" min="0">
+                    <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                        <h3 style="margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-store"></i> Basic Information
+                        </h3>
+                        <div style="display: grid; gap: 1rem;">
+                            <div>
+                                <label style="font-size: 0.85rem; color: #7F8C8D; display: block; margin-bottom: 0.25rem;">Stall Name</label>
+                                <p id="viewHawkerName" style="font-size: 1.1rem; font-weight: 600; color: #2C3E50; margin: 0;"></p>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; color: #7F8C8D; display: block; margin-bottom: 0.25rem;">Category</label>
+                                <p id="viewHawkerCategory" style="font-size: 1rem; color: #2C3E50; margin: 0;"></p>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; color: #7F8C8D; display: block; margin-bottom: 0.25rem;">Description</label>
+                                <p id="viewHawkerDescription" style="font-size: 1rem; color: #2C3E50; margin: 0; line-height: 1.5;"></p>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85rem; color: #7F8C8D; display: block; margin-bottom: 0.25rem;">Status</label>
+                                <p id="viewHawkerStatus" style="font-size: 1rem; margin: 0;"></p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="editHawkerImage">Image URL</label>
-                        <input type="url" id="editHawkerImage">
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="editHawkerIsOpen">
-                            Currently Open
-                        </label>
+                    <div style="background: #fff3cd; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; border: 2px solid #ffc107;">
+                        <p style="margin: 0; color: #856404; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Note:</strong> Hawkers can update their own stall details from their dashboard. Admins can only view details and remove hawkers if needed.
+                        </p>
                     </div>
                     
                     <div class="form-actions">
-                        <button type="submit" class="save-btn" id="updateHawkerBtn">
-                            <i class="fas fa-save"></i> Update Hawker
-                        </button>
                         <button type="button" class="delete-btn" id="deleteHawkerBtn">
-                            <i class="fas fa-trash"></i> Delete Hawker
+                            <i class="fas fa-trash"></i> Remove Hawker
                         </button>
-                        <button type="button" class="cancel-btn" id="cancelEditHawkerBtn">Cancel</button>
+                        <button type="button" class="cancel-btn" id="cancelEditHawkerBtn">Close</button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
 
@@ -268,13 +252,33 @@
                         <input type="number" id="tableNumber" placeholder="Enter table number" required min="1" max="100">
                     </div>
                     
-                    <button onclick="generateQR()" class="save-btn" style="width: 100%; margin-top: 1rem;">
-                        <i class="fas fa-qrcode"></i> Generate QR Code
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button onclick="generateQR()" class="save-btn" style="flex: 1; margin-top: 1rem;">
+                            <i class="fas fa-qrcode"></i> Generate QR Code
+                        </button>
+                        <button onclick="resetQRCode()" class="save-btn" style="flex: 1; margin-top: 1rem; background: linear-gradient(135deg, #FF9800, #F57C00);" title="Delete and regenerate QR code">
+                            <i class="fas fa-sync-alt"></i> Reset QR Code
+                        </button>
+                    </div>
+                    
+                    <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 0.75rem; margin-top: 1rem; border-radius: 6px;">
+                        <p style="margin: 0; font-size: 0.85rem; color: #856404; line-height: 1.5;">
+                            <i class="fas fa-info-circle"></i> <strong>When to use Reset:</strong><br>
+                            • QR code failed to generate<br>
+                            • QR code not working/scanning properly<br>
+                            • URL structure changed<br>
+                            • Need a fresh QR code for any reason
+                        </p>
+                    </div>
                 </div>
 
                 <div id="qrCodeDisplay" style="display: none; margin-top: 2rem;">
                     <h3 style="text-align: center; margin-bottom: 1rem;">QR Code Generated</h3>
+                    <div style="text-align: center; margin-bottom: 1rem;">
+                        <p id="qrStatusMessage" style="font-weight: 600; color: #4CAF50; font-size: 0.9rem;">
+                            <i class="fas fa-check-circle"></i> QR Code retrieved from database
+                        </p>
+                    </div>
                     <div style="text-align: center; padding: 1.5rem; background: white; border-radius: 12px;">
                         <img id="qrCodeImage" src="" alt="QR Code" style="max-width: 300px; width: 100%;">
                     </div>
@@ -327,6 +331,7 @@
         let currentFoodCourt = null;
         let foodCourts = [];
         let supabase;
+        let qrCodeManager; // QR Code Manager instance
         let deleteButtonCooldownTimer = null; // Store cooldown timer reference
         
         // Initialize Supabase
@@ -336,7 +341,9 @@
                 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
                 
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                qrCodeManager = new QRCodeManager(supabase); // Initialize QR Code Manager
                 console.log('✅ Supabase connected successfully!');
+                console.log('✅ QR Code Manager initialized!');
                 return true;
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);
@@ -588,8 +595,8 @@
                                     </p>
                                 </div>
                                 <div class="hawker-actions-inline">
-                                    <button class="edit-hawker-btn" onclick="editHawker('${stall.id}')" title="Edit hawker">
-                                        <i class="fas fa-edit"></i> Edit
+                                    <button class="edit-hawker-btn" onclick="editHawker('${stall.id}')" title="View hawker details">
+                                        <i class="fas fa-eye"></i> View
                                     </button>
                                 </div>
                             </div>
@@ -1023,31 +1030,47 @@
                     return;
                 }
                 
-                // Populate form with hawker data
+                // Store the ID for deletion
                 document.getElementById('editHawkerId').value = stallData.id;
-                document.getElementById('editHawkerName').value = stallData.stall_name;
-                document.getElementById('editHawkerCategory').value = stallData.cuisine_type;
-                document.getElementById('editHawkerDescription').value = stallData.description || '';
-                document.getElementById('editHawkerRating').value = 0; // We can add rating later
-                document.getElementById('editHawkerItemCount').value = 0; // We can count menu items later
-                document.getElementById('editHawkerImage').value = stallData.image_url || '';
-                document.getElementById('editHawkerIsOpen').checked = stallData.status === 'active';
+                
+                // Display hawker data in read-only view
+                document.getElementById('viewHawkerName').textContent = stallData.stall_name;
+                
+                // Format category display
+                const categoryMap = {
+                    'asian': 'Asian Cuisine',
+                    'western': 'Western Food',
+                    'drinks': 'Drinks & Beverages',
+                    'dessert': 'Dessert',
+                    'snacks': 'Snacks'
+                };
+                document.getElementById('viewHawkerCategory').textContent = categoryMap[stallData.cuisine_type] || stallData.cuisine_type;
+                
+                document.getElementById('viewHawkerDescription').textContent = stallData.description || 'No description available';
+                
+                // Format status display
+                const statusElement = document.getElementById('viewHawkerStatus');
+                if (stallData.status === 'active') {
+                    statusElement.innerHTML = '<span style="color: #4CAF50; font-weight: 600;"><i class="fas fa-check-circle"></i> Active</span>';
+                } else {
+                    statusElement.innerHTML = '<span style="color: #f44336; font-weight: 600;"><i class="fas fa-times-circle"></i> Inactive</span>';
+                }
                 
                 // Reset delete button state
                 const deleteBtn = document.getElementById('deleteHawkerBtn');
                 if (deleteBtn) {
                     deleteBtn.disabled = false;
-                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Hawker';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Remove Hawker';
                     deleteBtn.style.cursor = 'pointer';
                 }
                 
-                // Close the manage hawkers modal and open edit modal
+                // Close the manage hawkers modal and open view modal
                 document.getElementById('assignHawkersModal').style.display = 'none';
                 document.getElementById('editHawkerModal').style.display = 'block';
                 
-                console.log('✅ Hawker data loaded for editing:', stallData);
+                console.log('✅ Hawker details loaded for viewing:', stallData);
             } catch (error) {
-                console.error('❌ Error loading hawker for editing:', error);
+                console.error('❌ Error loading hawker details:', error);
                 alert('Error loading hawker data: ' + error.message);
             }
         }
@@ -1063,7 +1086,7 @@
             const deleteBtn = document.getElementById('deleteHawkerBtn');
             if (deleteBtn) {
                 deleteBtn.disabled = false;
-                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Hawker';
+                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Remove Hawker';
             }
             
             document.getElementById('editHawkerModal').style.display = 'none';
@@ -1071,51 +1094,6 @@
             // Reopen the manage hawkers modal if there's a current food court
             if (currentFoodCourt) {
                 document.getElementById('assignHawkersModal').style.display = 'block';
-            }
-        }
-        
-        async function updateHawker(event) {
-            event.preventDefault();
-            
-            const stallId = document.getElementById('editHawkerId').value;
-            
-            if (!stallId) {
-                alert('Hawker ID not found!');
-                return;
-            }
-            
-            try {
-                // Update hawker stall data in Supabase
-                const { data, error } = await supabase
-                    .from('hawker_stalls')
-                    .update({
-                        stall_name: document.getElementById('editHawkerName').value,
-                        cuisine_type: document.getElementById('editHawkerCategory').value,
-                        description: document.getElementById('editHawkerDescription').value,
-                        image_url: document.getElementById('editHawkerImage').value || null,
-                        status: document.getElementById('editHawkerIsOpen').checked ? 'active' : 'inactive'
-                    })
-                    .eq('id', stallId)
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                console.log('✅ Hawker updated:', data);
-                alert('Hawker updated successfully!');
-                
-                closeEditHawkerModal();
-                
-                // Reload food courts to reflect changes
-                await loadFoodCourts();
-                
-                // Refresh the hawkers modal if there's a current food court
-                if (currentFoodCourt) {
-                    await showAssignHawkers(currentFoodCourt.id);
-                }
-            } catch (error) {
-                console.error('❌ Error updating hawker:', error);
-                alert('Error updating hawker: ' + error.message);
             }
         }
         
@@ -1134,7 +1112,7 @@
             document.getElementById('qrCodeModal').style.display = 'none';
         }
         
-        function generateQR() {
+        async function generateQR() {
             const tableNumber = document.getElementById('tableNumber').value;
             
             if (!tableNumber || tableNumber < 1) {
@@ -1147,98 +1125,196 @@
                 return;
             }
             
-            // Create URL with food court and table info
-            const baseUrl = window.location.origin;
-            const menuUrl = `${baseUrl}/customer/menu.html?foodcourt=${currentFoodCourt.id}&table=${tableNumber}`;
+            try {
+                // Show loading state
+                const generateBtn = document.querySelector('.qr-section .save-btn');
+                const originalBtnText = generateBtn.innerHTML;
+                generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking database...';
+                generateBtn.disabled = true;
+                
+                // Use QR Code Manager to get or create QR code
+                const result = await qrCodeManager.getOrCreateQRCode(currentFoodCourt.id, tableNumber);
+                
+                // Display QR code
+                document.getElementById('qrCodeImage').src = result.qr_code_url;
+                document.getElementById('qrDisplayFoodCourt').textContent = currentFoodCourt.name;
+                document.getElementById('qrDisplayTable').textContent = tableNumber;
+                document.getElementById('qrCodeLink').textContent = result.menu_url;
+                document.getElementById('qrCodeLink').href = result.menu_url;
+                document.getElementById('qrCodeDisplay').style.display = 'block';
+                
+                // Show status message
+                const statusMsg = document.getElementById('qrStatusMessage');
+                if (result.isNew) {
+                    statusMsg.innerHTML = '<i class="fas fa-sparkles"></i> New QR Code generated and saved to database';
+                    statusMsg.style.color = '#FF9800';
+                } else {
+                    statusMsg.innerHTML = '<i class="fas fa-database"></i> QR Code retrieved from database (no regeneration needed)';
+                    statusMsg.style.color = '#4CAF50';
+                }
+                
+                // Restore button
+                generateBtn.innerHTML = originalBtnText;
+                generateBtn.disabled = false;
+                
+            } catch (error) {
+                console.error('❌ Error generating QR code:', error);
+                alert('Error generating QR code: ' + error.message);
+                
+                // Restore button on error
+                const generateBtn = document.querySelector('.qr-section .save-btn');
+                generateBtn.innerHTML = '<i class="fas fa-qrcode"></i> Generate QR Code';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        async function resetQRCode() {
+            const tableNumber = document.getElementById('tableNumber').value;
             
-            // Generate QR code using API
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(menuUrl)}`;
+            if (!tableNumber || tableNumber < 1) {
+                alert('Please enter a valid table number!');
+                return;
+            }
             
-            // Display QR code
-            document.getElementById('qrCodeImage').src = qrCodeUrl;
-            document.getElementById('qrDisplayFoodCourt').textContent = currentFoodCourt.name;
-            document.getElementById('qrDisplayTable').textContent = tableNumber;
-            document.getElementById('qrCodeLink').textContent = menuUrl;
-            document.getElementById('qrCodeLink').href = menuUrl;
-            document.getElementById('qrCodeDisplay').style.display = 'block';
+            if (!currentFoodCourt) {
+                alert('Food court not selected!');
+                return;
+            }
+            
+            // Confirm reset action
+            if (!confirm(`⚠️ Reset QR Code?\n\nThis will DELETE the existing QR code for Table ${tableNumber} and generate a completely new one.\n\nAre you sure you want to continue?`)) {
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const resetBtn = document.querySelectorAll('.qr-section .save-btn')[1];
+                const originalBtnText = resetBtn.innerHTML;
+                resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+                resetBtn.disabled = true;
+                
+                // Step 1: Delete existing QR code from database
+                console.log('🗑️ Deleting old QR code for table:', tableNumber);
+                await qrCodeManager.deleteQRCode(currentFoodCourt.id, tableNumber);
+                
+                // Step 2: Generate new QR code
+                console.log('⚡ Generating new QR code...');
+                const result = await qrCodeManager.getOrCreateQRCode(currentFoodCourt.id, tableNumber);
+                
+                // Display QR code
+                document.getElementById('qrCodeImage').src = result.qr_code_url;
+                document.getElementById('qrDisplayFoodCourt').textContent = currentFoodCourt.name;
+                document.getElementById('qrDisplayTable').textContent = tableNumber;
+                document.getElementById('qrCodeLink').textContent = result.menu_url;
+                document.getElementById('qrCodeLink').href = result.menu_url;
+                document.getElementById('qrCodeDisplay').style.display = 'block';
+                
+                // Show status message
+                const statusMsg = document.getElementById('qrStatusMessage');
+                statusMsg.innerHTML = '<i class="fas fa-check-circle"></i> QR Code RESET successfully! New QR code generated and saved';
+                statusMsg.style.color = '#4CAF50';
+                
+                // Restore button
+                resetBtn.innerHTML = originalBtnText;
+                resetBtn.disabled = false;
+                
+                // Show success alert
+                alert('✅ QR Code Reset Complete!\n\nOld QR code deleted and new one generated successfully.');
+                
+            } catch (error) {
+                console.error('❌ Error resetting QR code:', error);
+                alert('Error resetting QR code: ' + error.message + '\n\nThe old QR code may have been deleted. Try "Generate QR Code" to create a new one.');
+                
+                // Restore button on error
+                const resetBtn = document.querySelectorAll('.qr-section .save-btn')[1];
+                resetBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Reset QR Code';
+                resetBtn.disabled = false;
+            }
         }
         
         function downloadQRCode() {
             const qrImage = document.getElementById('qrCodeImage');
             const tableNumber = document.getElementById('tableNumber').value;
-            const foodCourtName = currentFoodCourt.name.replace(/\s+/g, '_');
             
-            // Create download link
-            const link = document.createElement('a');
-            link.href = qrImage.src;
-            link.download = `QR_${foodCourtName}_Table_${tableNumber}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            if (qrCodeManager && currentFoodCourt) {
+                qrCodeManager.downloadQRCode(qrImage.src, currentFoodCourt.name, tableNumber);
+            } else {
+                // Fallback to original method
+                const foodCourtName = currentFoodCourt.name.replace(/\s+/g, '_');
+                const link = document.createElement('a');
+                link.href = qrImage.src;
+                link.download = `QR_${foodCourtName}_Table_${tableNumber}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         }
         
         function printQRCode() {
             const qrImage = document.getElementById('qrCodeImage').src;
             const tableNumber = document.getElementById('tableNumber').value;
-            const foodCourtName = currentFoodCourt.name;
             
-            // Create print window
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>QR Code - ${foodCourtName} - Table ${tableNumber}</title>
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            text-align: center;
-                            padding: 20px;
-                        }
-                        h1 {
-                            color: #FF6B35;
-                            margin-bottom: 10px;
-                        }
-                        h2 {
-                            color: #2C3E50;
-                            margin-bottom: 20px;
-                        }
-                        img {
-                            margin: 20px 0;
-                            border: 2px solid #E0E0E0;
-                            padding: 10px;
-                            border-radius: 12px;
-                        }
-                        .info {
-                            margin-top: 20px;
-                            font-size: 18px;
-                            color: #666;
-                        }
-                        @media print {
+            if (qrCodeManager && currentFoodCourt) {
+                qrCodeManager.printQRCode(qrImage, currentFoodCourt.name, tableNumber);
+            } else {
+                // Fallback to original method
+                const foodCourtName = currentFoodCourt.name;
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>QR Code - ${foodCourtName} - Table ${tableNumber}</title>
+                        <style>
                             body {
-                                padding: 0;
+                                font-family: Arial, sans-serif;
+                                text-align: center;
+                                padding: 20px;
                             }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>Sarawak Food Court</h1>
-                    <h2>${foodCourtName}</h2>
-                    <img src="${qrImage}" alt="QR Code">
-                    <div class="info">
-                        <p><strong>Table Number: ${tableNumber}</strong></p>
-                        <p>Scan to view menu and place orders</p>
-                    </div>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            
-            // Print after image loads
-            setTimeout(() => {
-                printWindow.print();
-            }, 500);
+                            h1 {
+                                color: #FF6B35;
+                                margin-bottom: 10px;
+                            }
+                            h2 {
+                                color: #2C3E50;
+                                margin-bottom: 20px;
+                            }
+                            img {
+                                margin: 20px 0;
+                                border: 2px solid #E0E0E0;
+                                padding: 10px;
+                                border-radius: 12px;
+                            }
+                            .info {
+                                margin-top: 20px;
+                                font-size: 18px;
+                                color: #666;
+                            }
+                            @media print {
+                                body {
+                                    padding: 0;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Sarawak Food Court</h1>
+                        <h2>${foodCourtName}</h2>
+                        <img src="${qrImage}" alt="QR Code">
+                        <div class="info">
+                            <p><strong>Table Number: ${tableNumber}</strong></p>
+                            <p>Scan to view menu and place orders</p>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
+            }
         }
         
         async function saveHawkerAssignments() {
@@ -1281,12 +1357,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🎯 Setting up event listeners...');
             
-            // Edit hawker modal event listeners
+            // View hawker modal event listeners
             const deleteHawkerBtn = document.getElementById('deleteHawkerBtn');
             const closeEditBtn = document.getElementById('closeEditHawkerBtn');
             const cancelEditBtn = document.getElementById('cancelEditHawkerBtn');
-            const editHawkerForm = document.getElementById('editHawkerForm');
-            const updateHawkerBtn = document.getElementById('updateHawkerBtn');
             
             if (deleteHawkerBtn) {
                 deleteHawkerBtn.addEventListener('click', function(e) {
@@ -1314,15 +1388,6 @@
                     closeEditHawkerModal();
                 });
                 console.log('✅ Cancel button event listener attached');
-            }
-            
-            if (editHawkerForm) {
-                editHawkerForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    console.log('📝 Form submitted via event listener');
-                    updateHawker(e);
-                });
-                console.log('✅ Form submit event listener attached');
             }
             
             console.log('✅ All event listeners initialized!');
