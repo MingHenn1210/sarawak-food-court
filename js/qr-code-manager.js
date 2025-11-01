@@ -12,7 +12,7 @@ const QR_CONFIG = {
     // - 'https://your-site.netlify.app'
     // - 'https://your-domain.com'
     // - 'https://yourusername.github.io/sarawak-food-court'
-    PRODUCTION_URL: 'http://localhost:5500', // ⚠️ CHANGE THIS to your deployed URL
+    PRODUCTION_URL: 'https://sarawak-order-system.netlify.app/', // ⚠️ CHANGE THIS to your deployed URL
     
     // Auto-detect environment (production if deployed, localhost for testing)
     USE_AUTO_DETECT: true
