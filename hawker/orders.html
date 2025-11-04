@@ -97,7 +97,11 @@
             }
             session = JSON.parse(sessionData);
             
-            // Load hawker stall information from Supabase to get food court name
+            // ⚡ Show session data immediately (no waiting)
+            document.getElementById('stallName').textContent = session.stallName || 'My Stall';
+            document.getElementById('foodCourtName').textContent = 'Food Court';
+            
+            // Then load hawker stall information from Supabase to get food court name
             try {
                 const { data, error } = await supabase
                     .from('hawker_stalls')
@@ -115,15 +119,14 @@
                 if (error) throw error;
                 
                 hawkerStall = data;
-                // Display food court name and stall name
+                // Update with actual database values
                 document.getElementById('foodCourtName').textContent = data.food_courts?.name || 'Food Court';
                 document.getElementById('stallName').textContent = data.stall_name || session.stallName || 'My Stall';
                 
                 console.log('✅ Hawker stall loaded:', hawkerStall);
             } catch (error) {
                 console.error('❌ Error loading hawker stall:', error);
-                document.getElementById('foodCourtName').textContent = 'Food Court';
-                document.getElementById('stallName').textContent = session.stallName || 'My Stall';
+                // Keep the session values already displayed
             }
         }
         

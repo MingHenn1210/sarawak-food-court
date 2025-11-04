@@ -435,10 +435,20 @@
                     
                     console.log('✅ Item updated in Supabase:', data);
                     
-                    // Update in local array
+                    // ✅ Update in local array with properly formatted data
                     const localIndex = menuItems.findIndex(i => i.id === editingItemId);
                     if (localIndex !== -1) {
-                        menuItems[localIndex] = itemData;
+                        menuItems[localIndex] = {
+                            id: data.id,
+                            stallId: data.stall_id,
+                            name: data.name,
+                            price: parseFloat(data.price),
+                            description: data.description,
+                            category: data.category,
+                            image: data.image_url || 'https://via.placeholder.com/300?text=No+Image',
+                            available: data.availability === 'available',
+                            isPopular: data.is_popular || false
+                        };
                     }
                     
                     showToast('Item updated successfully!');
@@ -455,29 +465,28 @@
                     
                     console.log('✅ Item inserted into Supabase:', data);
                     
-                    // Update the itemData with the actual ID from Supabase
-                    itemData.id = data.id;
+                    // ✅ Create proper item object from database response
+                    const newItem = {
+                        id: data.id,
+                        stallId: data.stall_id,
+                        name: data.name,
+                        price: parseFloat(data.price),
+                        description: data.description,
+                        category: data.category,
+                        image: data.image_url || 'https://via.placeholder.com/300?text=No+Image',
+                        available: data.availability === 'available',
+                        isPopular: data.is_popular || false
+                    };
                     
                     // Add to local array
-                    menuItems.push(itemData);
+                    menuItems.push(newItem);
                     
                     showToast('Item added successfully!');
                 }
                 
-                // Also save to localStorage for offline access
-                let allMenus = JSON.parse(localStorage.getItem('menus') || '[]');
-                
-                if (editingItemId) {
-                    const globalIndex = allMenus.findIndex(i => i.id === editingItemId);
-                    if (globalIndex !== -1) {
-                        allMenus[globalIndex] = itemData;
-                    }
-                } else {
-                    allMenus.push(itemData);
-                }
-                
-                localStorage.setItem('menus', JSON.stringify(allMenus));
-                console.log('Saved to localStorage. Total menus:', allMenus.length);
+                // ✅ Sync all menu items to localStorage for offline access
+                localStorage.setItem('menus', JSON.stringify(menuItems));
+                console.log('Synced to localStorage. Total items:', menuItems.length);
                 
                 closeItemModal();
                 displayMenu();
