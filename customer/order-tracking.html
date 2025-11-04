@@ -62,17 +62,30 @@
             </div>
         </div>
         
-        <!-- Order History -->
-        <div class="order-history-section">
-            <h2>Order History</h2>
-            <div id="orderHistory">
-                <div class="empty-state">
-                    <i class="fas fa-receipt"></i>
-                    <p>No previous orders</p>
-                    <a href="home.html" class="btn-primary">
-                        <i class="fas fa-utensils"></i> Start Ordering
-                    </a>
+        <!-- Completion Message (shown when order is completed) -->
+        <div id="completionMessage" style="display: none;">
+            <div class="completion-card">
+                <div class="completion-icon">
+                    🎉
                 </div>
+                <h2>Order Completed!</h2>
+                <p>Thank you for your order!</p>
+                <p class="completion-subtitle">Have a nice meal! 🍜</p>
+                <a href="home.html" class="btn-primary btn-large">
+                    <i class="fas fa-home"></i> Back to Home
+                </a>
+            </div>
+        </div>
+        
+        <!-- Empty State (no active orders) -->
+        <div id="emptyState" style="display: none;">
+            <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h3>No Active Orders</h3>
+                <p>You don't have any orders in progress</p>
+                <a href="home.html" class="btn-primary">
+                    <i class="fas fa-utensils"></i> Start Ordering
+                </a>
             </div>
         </div>
     </main>
@@ -142,16 +155,25 @@
                 
                 if (currentOrder) {
                     console.log('✅ Order loaded successfully:', currentOrder.orderId);
-                    displayCurrentOrder();
+                    
+                    // Check if order is completed
+                    if (currentOrder.status === 'completed') {
+                        showCompletionMessage();
+                        // Clear saved order after showing completion
+                        setTimeout(() => {
+                            localStorage.removeItem('currentOrderId');
+                        }, 5000); // Clear after 5 seconds
+                    } else {
+                        displayCurrentOrder();
+                    }
                 } else {
-                    console.log('❌ No order found');
+                    console.log('❌ No active order');
+                    showEmptyState();
                 }
-                
-                // Load order history
-                await displayOrderHistory();
                 
             } catch (error) {
                 console.error('Error loading orders:', error);
+                showEmptyState();
             }
         }
         
@@ -268,13 +290,25 @@
                     // Update current order
                     currentOrder.status = newStatus;
                     
+                    // Check if order is completed
+                    if (newStatus === 'completed') {
+                        // Unsubscribe from updates
+                        if (orderSubscription) {
+                            orderSubscription.unsubscribe();
+                        }
+                        
+                        // Show completion message
+                        showCompletionMessage();
+                        return;
+                    }
+                    
                     // Update progress tracker
                     if (progressTracker) {
                         progressTracker.updateStatus(newStatus);
                     }
                     
-                    // Play celebration sound for ready/completed
-                    if (newStatus === 'ready' || newStatus === 'completed') {
+                    // Play celebration sound for ready
+                    if (newStatus === 'ready') {
                         if ('vibrate' in navigator) {
                             navigator.vibrate([200, 100, 200, 100, 200]);
                         }
@@ -304,19 +338,36 @@
             `).join('');
         }
         
-        async function displayOrderHistory() {
-            const container = document.getElementById('orderHistory');
+        function showCompletionMessage() {
+            // Hide other sections
+            document.getElementById('currentOrderSection').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
             
-            try {
-                // For now, just show empty state for guest users
-                // In the future, you can load orders by table number
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-receipt"></i>
-                        <p>No previous orders</p>
-                    </div>
-                `;
-                return;
+            // Show completion message
+            document.getElementById('completionMessage').style.display = 'block';
+            
+            // Show notification
+            if (window.notificationManager) {
+                window.notificationManager.show({
+                    status: 'completed',
+                    title: 'Order Completed! 🎉',
+                    message: 'Thank you! Have a nice meal! 🍜'
+                });
+            }
+        }
+        
+        function showEmptyState() {
+            // Hide other sections
+            document.getElementById('currentOrderSection').style.display = 'none';
+            document.getElementById('completionMessage').style.display = 'none';
+            
+            // Show empty state
+            document.getElementById('emptyState').style.display = 'block';
+        }
+        
+        async function displayOrderHistory() {
+            // REMOVED: No more order history
+            return;
                 
                 /* Future enhancement: Load orders by table number
                 const tableNumber = localStorage.getItem('tableNumber');
@@ -368,10 +419,6 @@
                         </div>
                     `;
                 }).join('');
-                
-            } catch (error) {
-                console.error('Error displaying order history:', error);
-            }
         }
         
         function startOrderUpdates() {
