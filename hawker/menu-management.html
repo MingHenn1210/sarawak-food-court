@@ -252,6 +252,7 @@
                     console.log('Loaded from localStorage. My menu items:', menuItems.length);
                 } else {
                     console.log('✅ Loaded from Supabase:', supabaseMenus?.length || 0, 'items');
+                    console.log('Raw Supabase data:', supabaseMenus);
                     
                     // Convert Supabase format to local format
                     menuItems = (supabaseMenus || []).map(item => ({
@@ -262,7 +263,7 @@
                         description: item.description,
                         category: item.category,
                         image: item.image_url || 'https://via.placeholder.com/300?text=No+Image',
-                        available: item.available,
+                        available: item.availability === 'available', // ✅ Convert TEXT to BOOLEAN
                         isPopular: item.is_popular || false
                     }));
                     
@@ -416,7 +417,7 @@
                     price: itemData.price,
                     category: itemData.category,
                     image_url: itemData.image,
-                    available: itemData.available,
+                    availability: itemData.available ? 'available' : 'unavailable', // ✅ Convert BOOLEAN to TEXT
                     is_popular: itemData.isPopular
                 };
                 
@@ -498,7 +499,7 @@
                 console.log('Updating availability in Supabase for item:', itemId);
                 const { error } = await supabase
                     .from('menu_items')
-                    .update({ available: newAvailability })
+                    .update({ availability: newAvailability ? 'available' : 'unavailable' }) // ✅ Convert BOOLEAN to TEXT
                     .eq('id', itemId);
                 
                 if (error) throw error;
