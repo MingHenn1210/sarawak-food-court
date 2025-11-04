@@ -123,12 +123,6 @@
             const password = document.getElementById('password').value;
             const remember = document.getElementById('remember').checked;
             
-            console.log('🔐 Attempting login with:', {
-                phone: phone,
-                password: password,
-                passwordLength: password.length
-            });
-            
             // Show loading
             const btn = event.target.querySelector('button[type="submit"]');
             const originalText = btn.innerHTML;
@@ -136,55 +130,36 @@
             btn.disabled = true;
             
             try {
-                // First, let's check if user exists with this phone
-                console.log('📞 Step 1: Checking if phone exists:', phone);
-                const { data: allUsers, error: checkError } = await supabase
+                // ⚡ OPTIMIZED: Single query with JOIN to get user + stall in one go
+                const { data: userData, error: userError } = await supabase
                     .from('users')
-                    .select('*')
-                    .eq('phone', phone);
-                
-                console.log('📋 All users with this phone:', allUsers);
-                
-                if (!allUsers || allUsers.length === 0) {
-                    throw new Error('No account found with this phone number. Please check the phone number.');
-                }
-                
-                // Check if any of them are hawkers
-                const hawkerUser = allUsers.find(u => u.role === 'hawker');
-                if (!hawkerUser) {
-                    throw new Error('This phone number is not registered as a hawker account.');
-                }
-                
-                console.log('� Hawker user found:', hawkerUser);
-                
-                // Now check password
-                console.log('🔑 Checking password...');
-                console.log('Stored password:', hawkerUser.password_hash);
-                console.log('Entered password:', password);
-                console.log('Match:', hawkerUser.password_hash === password);
-                
-                if (hawkerUser.password_hash !== password) {
-                    throw new Error('Incorrect password. Please try again.');
-                }
-                
-                const userData = hawkerUser;
-                console.log('✅ User authenticated:', userData);
-                
-                // Get hawker stall info
-                console.log('🏪 Searching for stall with hawker_id:', userData.id);
-                const { data: stallData, error: stallError } = await supabase
-                    .from('hawker_stalls')
-                    .select('*')
-                    .eq('hawker_id', userData.id)
-                    .eq('status', 'active')
+                    .select(`
+                        id,
+                        full_name,
+                        email,
+                        password_hash,
+                        hawker_stalls!inner (
+                            id,
+                            stall_name,
+                            status
+                        )
+                    `)
+                    .eq('phone', phone)
+                    .eq('role', 'hawker')
+                    .eq('hawker_stalls.status', 'active')
                     .single();
                 
-                console.log('🔍 Stall query result:', { stallData, stallError });
-                
-                if (stallError || !stallData) {
-                    console.error('❌ No active stall found');
-                    throw new Error('No active stall found for this account');
+                if (userError || !userData) {
+                    throw new Error('Invalid phone number or no active stall found.');
                 }
+                
+                // Check password
+                if (userData.password_hash !== password) {
+                    throw new Error('Incorrect password.');
+                }
+                
+                // Get the first active stall
+                const stallData = userData.hawker_stalls[0];
                 
                 // Save session
                 const session = {
@@ -202,12 +177,8 @@
                     sessionStorage.setItem('hawkerSession', JSON.stringify(session));
                 }
                 
-                console.log('✅ Login successful');
-                
-                // Redirect to orders page (first page)
-                setTimeout(() => {
-                    window.location.href = 'orders.html';
-                }, 1000);
+                // ⚡ Redirect immediately (no delay)
+                window.location.href = 'orders.html';
                 
             } catch (error) {
                 console.error('❌ Login error:', error);
