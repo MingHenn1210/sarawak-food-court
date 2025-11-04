@@ -583,30 +583,23 @@
                 return;
             }
             
-            // Read file and convert to base64
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                
-                // Store in hidden input
-                document.getElementById('itemImage').value = base64Image;
-                
-                // Show preview
-                const preview = document.getElementById('imagePreview');
-                preview.style.backgroundImage = `url('${base64Image}')`;
-                preview.innerHTML = '';
-                
-                // Show remove button
-                document.getElementById('removeImageBtn').style.display = 'inline-block';
-                
-                showToast('Image uploaded successfully!');
-            };
+            // ⚠️ TEMPORARY FIX: Use placeholder image to avoid quota exceeded
+            // TODO: Implement proper image upload to Supabase Storage later
             
-            reader.onerror = function() {
-                showToast('Failed to read image file', 'error');
-            };
+            const placeholderUrl = `https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=${encodeURIComponent(file.name.substring(0, 20))}`;
             
-            reader.readAsDataURL(file);
+            // Store placeholder URL instead of base64
+            document.getElementById('itemImage').value = placeholderUrl;
+            
+            // Show preview
+            const preview = document.getElementById('imagePreview');
+            preview.style.backgroundImage = `url('${placeholderUrl}')`;
+            preview.innerHTML = '';
+            
+            // Show remove button
+            document.getElementById('removeImageBtn').style.display = 'inline-block';
+            
+            showToast('Image placeholder set (upload to storage coming soon!)', 'warning');
         }
         
         function removeImage() {
