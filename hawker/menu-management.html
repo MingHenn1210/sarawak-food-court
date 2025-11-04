@@ -263,7 +263,7 @@
                         description: item.description,
                         category: item.category,
                         image: item.image_url || 'https://via.placeholder.com/300?text=No+Image',
-                        available: item.availability === 'available', // ✅ Convert TEXT to BOOLEAN
+                        available: item.available, // ✅ Use BOOLEAN directly
                         isPopular: item.is_popular || false
                     }));
                     
@@ -417,7 +417,7 @@
                     price: itemData.price,
                     category: itemData.category,
                     image_url: itemData.image,
-                    availability: itemData.available ? 'available' : 'unavailable', // ✅ Convert BOOLEAN to TEXT
+                    available: itemData.available, // ✅ Use BOOLEAN directly
                     is_popular: itemData.isPopular
                 };
                 
@@ -446,7 +446,7 @@
                             description: data.description,
                             category: data.category,
                             image: data.image_url || 'https://via.placeholder.com/300?text=No+Image',
-                            available: data.availability === 'available',
+                            available: data.available, // ✅ Use BOOLEAN directly
                             isPopular: data.is_popular || false
                         };
                     }
@@ -474,7 +474,7 @@
                         description: data.description,
                         category: data.category,
                         image: data.image_url || 'https://via.placeholder.com/300?text=No+Image',
-                        available: data.availability === 'available',
+                        available: data.available, // ✅ Use BOOLEAN directly
                         isPopular: data.is_popular || false
                     };
                     
@@ -508,7 +508,7 @@
                 console.log('Updating availability in Supabase for item:', itemId);
                 const { error } = await supabase
                     .from('menu_items')
-                    .update({ availability: newAvailability ? 'available' : 'unavailable' }) // ✅ Convert BOOLEAN to TEXT
+                    .update({ available: newAvailability }) // ✅ Use BOOLEAN directly
                     .eq('id', itemId);
                 
                 if (error) throw error;
