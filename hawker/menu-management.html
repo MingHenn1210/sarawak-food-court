@@ -431,7 +431,10 @@
                         .select()
                         .single();
                     
-                    if (error) throw error;
+                    if (error) {
+                        console.error('Error updating item:', error);
+                        throw error;
+                    }
                     
                     console.log('✅ Item updated in Supabase:', data);
                     
@@ -451,7 +454,8 @@
                         };
                     }
                     
-                    showToast('Item updated successfully!');
+                    // ✅ Show success message for update
+                    showToast('✅ Item updated successfully!', 'success');
                 } else {
                     // Insert new item into Supabase
                     console.log('Inserting new item into Supabase');
@@ -481,7 +485,8 @@
                     // Add to local array
                     menuItems.push(newItem);
                     
-                    showToast('Item added successfully!');
+                    // ✅ Show success message for new item
+                    showToast('✅ Item added successfully!', 'success');
                 }
                 
                 // ✅ Sync all menu items to localStorage for offline access
