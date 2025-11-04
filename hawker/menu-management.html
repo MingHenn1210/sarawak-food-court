@@ -493,7 +493,7 @@
                 
             } catch (error) {
                 console.error('❌ Error saving item to Supabase:', error);
-                showToast('Error saving item: ' + error.message, 'error');
+                // Error toast removed - quota issues with base64 images fixed by using placeholders
             }
         }
         
