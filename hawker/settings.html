@@ -96,8 +96,8 @@
                 <h2><i class="fas fa-clock"></i> Operating Hours</h2>
                 <div class="toggle-switch">
                     <label>
-                        <input type="checkbox" id="isOpen" checked>
-                        <span>Stall is currently open</span>
+                        <input type="checkbox" id="isOpen">
+                        <span id="isOpenLabel">Stall is currently open</span>
                     </label>
                 </div>
             </div>
@@ -214,7 +214,11 @@
                 // Load stall information from Supabase
                 document.getElementById('stallName').value = hawkerStall.stall_name || '';
                 document.getElementById('stallDescription').value = hawkerStall.description || '';
-                document.getElementById('isOpen').checked = hawkerStall.is_open || false;
+                document.getElementById('isOpen').checked = hawkerStall.status === 'active';
+                updateIsOpenLabel();
+                
+                // Add event listener for the toggle
+                document.getElementById('isOpen').addEventListener('change', toggleStallStatus);
                 
                 if (hawkerStall.image_url) {
                     document.getElementById('profileImagePreview').src = hawkerStall.image_url;
@@ -531,6 +535,44 @@
             } catch (error) {
                 console.error('❌ Error updating QR code:', error);
                 showToast('Failed to update QR code: ' + error.message, 'error');
+            }
+        }
+        
+        function updateIsOpenLabel() {
+            const isOpen = document.getElementById('isOpen').checked;
+            const label = document.getElementById('isOpenLabel');
+            if (isOpen) {
+                label.textContent = 'Stall is OPEN - visible to customers';
+                label.style.color = '#28a745';
+            } else {
+                label.textContent = 'Stall is CLOSED - hidden from customers';
+                label.style.color = '#dc3545';
+            }
+        }
+
+        async function toggleStallStatus() {
+            if (!hawkerStall) return;
+
+            const isOpen = document.getElementById('isOpen').checked;
+            const newStatus = isOpen ? 'active' : 'inactive';
+
+            try {
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .update({ status: newStatus, updated_at: new Date().toISOString() })
+                    .eq('id', hawkerStall.id);
+
+                if (error) throw error;
+
+                hawkerStall.status = newStatus;
+                updateIsOpenLabel();
+                showToast(`Stall is now ${isOpen ? 'OPEN' : 'CLOSED'}`);
+            } catch (error) {
+                console.error('Error updating stall status:', error);
+                showToast('Failed to update status: ' + error.message, 'error');
+                // Revert checkbox on failure
+                document.getElementById('isOpen').checked = !isOpen;
+                updateIsOpenLabel();
             }
         }
         
