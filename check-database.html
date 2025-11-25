@@ -130,17 +130,24 @@
 
     <button onclick="refreshData()">🔄 Refresh Data</button>
 
+    <script src="js/supabase-client.js"></script>
     <script>
         let supabase;
 
         // Initialize Supabase
         function initializeSupabase() {
+            if (supabase) {
+                return true;
+            }
+
             try {
-                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase connected successfully!');
+                const client = getSupabaseClient();
+                if (!client) {
+                    console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                    return false;
+                }
+
+                supabase = client;
                 return true;
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);

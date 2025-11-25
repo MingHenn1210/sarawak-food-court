@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Menu Upload to Supabase</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -130,10 +131,14 @@
 
         // Initialize Supabase
         async function initSupabase() {
-            const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
-            
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabase = getSupabaseClient();
+
+            if (!supabase) {
+                console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                alert('Supabase client failed to initialize. Please refresh the page.');
+                return;
+            }
+
             console.log('✅ Supabase initialized');
         }
 
@@ -141,6 +146,11 @@
             const output = document.getElementById('tableStructure');
             output.innerHTML = 'Checking table structure...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 // Try to select from menu_items table
                 const { data, error, count } = await supabase
@@ -166,6 +176,11 @@
             const output = document.getElementById('menuList');
             output.innerHTML = 'Loading menu items...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('menu_items')
@@ -194,6 +209,11 @@
             const output = document.getElementById('insertResult');
             output.innerHTML = 'Inserting test item...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const itemData = {
                     stall_id: parseInt(document.getElementById('testStallId').value),
@@ -228,6 +248,11 @@
             const output = document.getElementById('stallsList');
             output.innerHTML = 'Loading stalls...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('hawker_stalls')
@@ -257,6 +282,11 @@
             const output = document.getElementById('deleteResult');
             output.innerHTML = 'Deleting test items...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('menu_items')

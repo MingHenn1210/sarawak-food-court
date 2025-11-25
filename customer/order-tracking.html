@@ -94,18 +94,19 @@
     </nav>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script src="../js/app.js"></script>
     <script src="../js/notifications.js"></script>
     <script>
         let currentOrder = null;
-        let orderUpdateInterval = null;
         let progressTracker = null;
         let orderSubscription = null;
         
-        const supabase = window.supabase.createClient(
-            'https://mtmkghuhhrerlcubhzot.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA'
-        );
+        const supabase = getSupabaseClient();
+
+        if (!supabase) {
+            console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+        }
         
         document.addEventListener('DOMContentLoaded', () => {
             // Request notification permission
@@ -115,8 +116,6 @@
             
             loadOrders();
             
-            // Start real-time updates (simulate)
-            startOrderUpdates();
         });
         
         async function loadOrders() {
@@ -125,70 +124,74 @@
             
             console.log('📋 Loading orders... Order ID:', orderId);
             
+            if (!supabase) {
+                alert('Unable to connect to the database. Please refresh the page.');
+                return;
+            }
+
             try {
-                // Load current order from database (works for guests too!)
                 if (orderId) {
                     console.log('🔍 Loading order from database:', orderId);
                     await loadOrderFromDatabase(orderId);
                 } else {
                     console.log('⚠️ No order ID in URL');
-                    // Try to get from localStorage as fallback
                     const savedOrderId = localStorage.getItem('currentOrderId');
                     if (savedOrderId) {
                         console.log('📦 Found saved order ID:', savedOrderId);
                         await loadOrderFromDatabase(savedOrderId);
                     }
                 }
-                
+
                 if (currentOrder) {
                     console.log('✅ Order loaded successfully:', currentOrder.orderId);
                     displayCurrentOrder();
                 } else {
                     console.log('❌ No order found');
                 }
-                
-                // Load order history
+
                 await displayOrderHistory();
-                
+
             } catch (error) {
                 console.error('Error loading orders:', error);
             }
         }
-        
+    
         async function loadOrderFromDatabase(orderId) {
             console.log('🔄 Fetching order from database...');
-            
+        
+            if (!supabase) {
+                return;
+            }
+
             const { data: order, error } = await supabase
                 .from('orders')
                 .select('*, order_items(*), order_payments(*)')
                 .eq('order_id', orderId)
                 .single();
-            
+        
             if (error) {
                 console.error('❌ Error loading order:', error);
                 alert('Error loading order: ' + error.message);
                 return;
             }
-            
+        
             if (!order) {
                 console.error('❌ Order not found:', orderId);
                 alert('Order not found!');
                 return;
             }
-            
+        
             console.log('✅ Order data from database:', order);
             console.log('📦 Order items:', order.order_items);
             console.log('💳 Order payments:', order.order_payments);
-            
+        
             currentOrder = transformDatabaseOrder(order);
             console.log('🔄 Transformed order:', currentOrder);
         }
-        
+    
         function transformDatabaseOrder(dbOrder) {
-            // Transform database format to app format
             const stallOrders = {};
-            
-            // Group items by stall
+        
             dbOrder.order_items.forEach(item => {
                 if (!stallOrders[item.stall_id]) {
                     const payment = dbOrder.order_payments.find(p => p.stall_id === item.stall_id);
@@ -200,17 +203,17 @@
                         total: 0
                     };
                 }
-                
+            
                 stallOrders[item.stall_id].items.push({
                     id: item.menu_item_id,
                     name: item.item_name,
                     price: parseFloat(item.price),
                     quantity: item.quantity
                 });
-                
+            
                 stallOrders[item.stall_id].total += parseFloat(item.subtotal);
             });
-            
+        
             return {
                 orderId: dbOrder.order_id,
                 tableNumber: dbOrder.table_number,
@@ -228,7 +231,7 @@
                 stallStatuses: {}
             };
         }
-        
+    
         function displayCurrentOrder() {
             document.getElementById('currentOrderSection').style.display = 'block';
             document.getElementById('currentOrderId').textContent = currentOrder.orderId;
@@ -251,6 +254,11 @@
         }
         
         function setupRealtimeUpdates() {
+            if (!supabase) {
+                console.warn('⚠️ Supabase client not available; skipping real-time updates.');
+                return;
+            }
+
             if (orderSubscription) {
                 orderSubscription.unsubscribe();
             }
@@ -320,6 +328,10 @@
                 
                 /* Future enhancement: Load orders by table number
                 const tableNumber = localStorage.getItem('tableNumber');
+                if (!supabase) {
+                    return;
+                }
+
                 const { data: orders, error } = await supabase
                     .from('orders')
                     .select('*, order_items(*)')
@@ -372,62 +384,6 @@
             } catch (error) {
                 console.error('Error displaying order history:', error);
             }
-        }
-        
-        function startOrderUpdates() {
-            if (!currentOrder) return;
-            
-            // Simulate real-time updates every 10 seconds
-            orderUpdateInterval = setInterval(() => {
-                simulateOrderProgress();
-            }, 10000);
-        }
-        
-        function simulateOrderProgress() {
-            if (!currentOrder) {
-                clearInterval(orderUpdateInterval);
-                return;
-            }
-            
-            const statuses = ['pending', 'preparing', 'ready', 'completed'];
-            const currentStatusIndex = statuses.indexOf(currentOrder.status);
-            
-            // Random progress for stalls
-            currentOrder.stallOrders.forEach(stall => {
-                const currentStallStatus = currentOrder.stallStatuses[stall.stallName];
-                const stallStatusIndex = statuses.indexOf(currentStallStatus);
-                
-                // 30% chance to progress
-                if (Math.random() < 0.3 && stallStatusIndex < statuses.length - 1) {
-                    currentOrder.stallStatuses[stall.stallName] = statuses[stallStatusIndex + 1];
-                    showNotification(`${stall.stallName}: ${formatStatus(statuses[stallStatusIndex + 1])}`);
-                }
-            });
-            
-            // Update overall order status based on slowest stall
-            const allStallStatuses = Object.values(currentOrder.stallStatuses);
-            const minStatusIndex = Math.min(...allStallStatuses.map(s => statuses.indexOf(s)));
-            currentOrder.status = statuses[minStatusIndex];
-            
-            // Check if all completed
-            if (allStallStatuses.every(s => s === 'completed')) {
-                currentOrder.status = 'completed';
-                clearInterval(orderUpdateInterval);
-                showNotification('🎉 Your order is ready! Enjoy your meal!');
-            }
-            
-            // Save updated order
-            localStorage.setItem('currentOrder', JSON.stringify(currentOrder));
-            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-            const index = orders.findIndex(o => o.orderId === currentOrder.orderId);
-            if (index !== -1) {
-                orders[index] = currentOrder;
-                localStorage.setItem('orders', JSON.stringify(orders));
-            }
-            
-            // Refresh display
-            updateTimeline(currentOrder.status);
-            displayStallProgress();
         }
         
         function getStatusIcon(status) {
@@ -488,9 +444,6 @@
         
         // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
-            if (orderUpdateInterval) {
-                clearInterval(orderUpdateInterval);
-            }
             if (orderSubscription) {
                 orderSubscription.unsubscribe();
             }

@@ -6,16 +6,62 @@
     <title>Check Menu Database</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        html,
+        body {
+            height: 100%;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
             background: #f5f7fa;
+            margin: 0;
+            overflow: hidden;
+        }
+        .page-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1400px;
+            height: 100vh;
+            box-sizing: border-box;
+            background: transparent;
+            margin: 0 auto;
+        }
+        .page-header,
+        .page-footer {
+            background: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            z-index: 1;
+        }
+        .page-header {
+            position: sticky;
+            top: 0;
+        }
+        .page-footer {
+            position: sticky;
+            bottom: 0;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .page-main {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .page-main::-webkit-scrollbar {
+            width: 10px;
+        }
+        .page-main::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+        .page-main::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
         }
         h1 {
             color: #F57C00;
-            margin-bottom: 2rem;
+            margin: 0;
         }
         .section {
             background: white;
@@ -54,21 +100,19 @@
             font-size: 0.875rem;
             font-weight: 600;
         }
-        .status.active {
-            background: #e8f5e9;
-            color: #388E3C;
-        }
-        .status.inactive {
-            background: #ffebee;
-            color: #d32f2f;
-        }
+        .status.active,
         .status.available {
             background: #e8f5e9;
             color: #388E3C;
         }
+        .status.inactive,
         .status.unavailable {
             background: #ffebee;
             color: #d32f2f;
+        }
+        .status.unknown {
+            background: #eceff1;
+            color: #455a64;
         }
         .loading {
             text-align: center;
@@ -142,49 +186,107 @@
     </style>
 </head>
 <body>
-    <h1>🍽️ Menu Database Check - Hawker Registered Items</h1>
-    
-    <div class="section">
-        <h2>📊 Summary</h2>
-        <div id="summary">
-            <div class="loading">Loading database information...</div>
-        </div>
+    <div class="page-container">
+        <header class="page-header">
+            <h1>🍽️ Menu Database Check - Hawker Registered Items</h1>
+        </header>
+
+        <main class="page-main">
+            <div class="section">
+                <h2>📊 Summary</h2>
+                <div id="summary">
+                    <div class="loading">Loading database information...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🏪 Hawkers and Their Stalls</h2>
+                <div id="hawkersStalls">
+                    <div class="loading">Loading hawkers and stalls...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>🍜 Menu Items by Hawker</h2>
+                <div id="menuItems">
+                    <div class="loading">Loading menu items...</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📋 All Menu Items (Detailed)</h2>
+                <div id="allMenuItems">
+                    <div class="loading">Loading all menu items...</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="page-footer">
+            <button onclick="refreshData()">🔄 Refresh Data</button>
+        </footer>
     </div>
 
-    <div class="section">
-        <h2>🏪 Hawkers and Their Stalls</h2>
-        <div id="hawkersStalls">
-            <div class="loading">Loading hawkers and stalls...</div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>🍜 Menu Items by Hawker</h2>
-        <div id="menuItems">
-            <div class="loading">Loading menu items...</div>
-        </div>
-    </div>
-
-    <div class="section">
-        <h2>📋 All Menu Items (Detailed)</h2>
-        <div id="allMenuItems">
-            <div class="loading">Loading all menu items...</div>
-        </div>
-    </div>
-
-    <button onclick="refreshData()">🔄 Refresh Data</button>
-
+    <script src="js/supabase-client.js"></script>
     <script>
         let supabase;
 
+        const formatPrice = (value) => {
+            const numberValue = Number(value);
+            return Number.isFinite(numberValue) ? numberValue.toFixed(2) : '0.00';
+        };
+
+        const toTitleCase = (text) => text
+            .split(/[_\s]+/)
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        const getStatusMeta = (value) => {
+            if (typeof value === 'string' && value.trim()) {
+                const normalized = value.trim().toLowerCase();
+                return {
+                    className: normalized,
+                    label: toTitleCase(normalized)
+                };
+            }
+            return {
+                className: 'unknown',
+                label: 'Unknown'
+            };
+        };
+
+        const isDefined = (value) => value !== null && value !== undefined;
+
+        const formatDate = (value) => {
+            if (!value) {
+                return 'N/A';
+            }
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? 'N/A' : parsed.toLocaleDateString();
+        };
+
+        const showErrorInAllSections = (message) => {
+            const errorMarkup = `<div class="error">${message}</div>`;
+            document.getElementById('summary').innerHTML = errorMarkup;
+            document.getElementById('hawkersStalls').innerHTML = errorMarkup;
+            document.getElementById('menuItems').innerHTML = errorMarkup;
+            document.getElementById('allMenuItems').innerHTML = errorMarkup;
+        };
+
         // Initialize Supabase
         function initializeSupabase() {
+            if (supabase) {
+                return true;
+            }
+
             try {
-                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase connected successfully!');
+                const client = getSupabaseClient();
+                if (!client) {
+                    console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                    return false;
+                }
+
+                supabase = client;
                 return true;
             } catch (error) {
                 console.error('❌ Failed to initialize Supabase:', error);
@@ -195,29 +297,49 @@
         // Load all data
         async function loadData() {
             if (!initializeSupabase()) {
-                document.getElementById('summary').innerHTML = '<div class="error">Failed to connect to database</div>';
+                showErrorInAllSections('Failed to connect to database');
                 return;
             }
 
             try {
-                // Get counts
-                const { count: hawkerCount } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('role', 'hawker');
+                // Run independent queries concurrently to load counts faster.
+                const [
+                    hawkerCountResult,
+                    stallCountResult,
+                    menuCountResult,
+                    activeMenuCountResult
+                ] = await Promise.all([
+                    supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('role', 'hawker'),
+                    supabase
+                        .from('hawker_stalls')
+                        .select('*', { count: 'exact', head: true }),
+                    supabase
+                        .from('menu_items')
+                        .select('*', { count: 'exact', head: true }),
+                    supabase
+                        .from('menu_items')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('available', true)
+                ]);
 
-                const { count: stallCount } = await supabase
-                    .from('hawker_stalls')
-                    .select('*', { count: 'exact', head: true });
+                [
+                    hawkerCountResult,
+                    stallCountResult,
+                    menuCountResult,
+                    activeMenuCountResult
+                ].forEach(result => {
+                    if (result.error) {
+                        throw result.error;
+                    }
+                });
 
-                const { count: menuCount } = await supabase
-                    .from('menu_items')
-                    .select('*', { count: 'exact', head: true });
-
-                const { count: activeMenuCount } = await supabase
-                    .from('menu_items')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('available', true);
+                const hawkerCount = hawkerCountResult.count || 0;
+                const stallCount = stallCountResult.count || 0;
+                const menuCount = menuCountResult.count || 0;
+                const activeMenuCount = activeMenuCountResult.count || 0;
 
                 // Display summary
                 document.getElementById('summary').innerHTML = `
@@ -241,34 +363,55 @@
                     </div>
                 `;
 
-                // Get hawkers with their stalls
-                const { data: hawkers, error: hawkersError } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('role', 'hawker')
-                    .order('created_at', { ascending: false });
+                const [
+                    hawkersResult,
+                    stallsResult,
+                    menuItemsResult
+                ] = await Promise.all([
+                    supabase
+                        .from('users')
+                        .select('*')
+                        .eq('role', 'hawker')
+                        .order('created_at', { ascending: false }),
+                    supabase
+                        .from('hawker_stalls')
+                        .select(`
+                            *,
+                            food_courts (
+                                name,
+                                address
+                            )
+                        `)
+                        .order('created_at', { ascending: false }),
+                    supabase
+                        .from('menu_items')
+                        .select(`
+                            *,
+                            hawker_stalls (
+                                stall_name,
+                                hawker_id,
+                                users (
+                                    full_name
+                                )
+                            )
+                        `)
+                        .order('created_at', { ascending: false })
+                ]);
 
-                if (hawkersError) throw hawkersError;
+                if (hawkersResult.error) throw hawkersResult.error;
+                if (stallsResult.error) throw stallsResult.error;
+                if (menuItemsResult.error) throw menuItemsResult.error;
 
-                // Get all stalls
-                const { data: stalls, error: stallsError } = await supabase
-                    .from('hawker_stalls')
-                    .select(`
-                        *,
-                        food_courts (
-                            name,
-                            address
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (stallsError) throw stallsError;
+                const hawkers = hawkersResult.data || [];
+                const stalls = stallsResult.data || [];
+                const menuItems = menuItemsResult.data || [];
 
                 // Display hawkers and stalls
                 if (hawkers && hawkers.length > 0) {
                     let hawkersHTML = '';
                     
                     for (const hawker of hawkers) {
+                        const hawkerStatus = getStatusMeta(hawker.status);
                         const hawkerStalls = stalls.filter(s => s.hawker_id === hawker.id);
                         
                         hawkersHTML += `
@@ -278,17 +421,18 @@
                                     📧 ${hawker.email} | 📞 ${hawker.phone || 'N/A'}
                                 </p>
                                 <p style="margin: 0.25rem 0;">
-                                    Status: <span class="status ${hawker.status}">${hawker.status}</span>
+                                    Status: <span class="status ${hawkerStatus.className}">${hawkerStatus.label}</span>
                                 </p>
                         `;
                         
                         if (hawkerStalls.length > 0) {
                             hawkersHTML += '<div style="margin-top: 1rem;"><strong>🏪 Stalls:</strong></div>';
                             hawkerStalls.forEach(stall => {
+                                const stallStatus = getStatusMeta(stall.status);
                                 hawkersHTML += `
                                     <div style="margin-left: 1rem; margin-top: 0.5rem; padding: 0.75rem; background: white; border-radius: 8px;">
                                         <strong>${stall.stall_name}</strong> 
-                                        <span class="status ${stall.status}">${stall.status}</span><br>
+                                        <span class="status ${stallStatus.className}">${stallStatus.label}</span><br>
                                         <small>📍 ${stall.food_courts?.name || 'N/A'} | Stall #${stall.stall_number || 'N/A'}</small><br>
                                         <small>🍽️ Cuisine: ${stall.cuisine_type || 'N/A'}</small>
                                     </div>
@@ -307,69 +451,70 @@
                 }
 
                 // Get menu items grouped by stall
-                const { data: menuItems, error: menuError } = await supabase
-                    .from('menu_items')
-                    .select(`
-                        *,
-                        hawker_stalls (
-                            stall_name,
-                            hawker_id,
-                            users (
-                                full_name
-                            )
-                        )
-                    `)
-                    .order('created_at', { ascending: false });
-
-                if (menuError) throw menuError;
-
                 // Display menu items by hawker
                 if (menuItems && menuItems.length > 0) {
                     // Group by hawker
-                    const menuByHawker = {};
-                    menuItems.forEach(item => {
+                    const menuByHawker = menuItems.reduce((acc, item) => {
                         const hawkerName = item.hawker_stalls?.users?.full_name || 'Unknown Hawker';
-                        if (!menuByHawker[hawkerName]) {
-                            menuByHawker[hawkerName] = {
-                                stall: item.hawker_stalls?.stall_name || 'Unknown Stall',
-                                items: []
-                            };
-                        }
-                        menuByHawker[hawkerName].items.push(item);
-                    });
+                        const stallName = item.hawker_stalls?.stall_name || 'Unknown Stall';
 
-                    let menuHTML = `<div class="success">✅ Found ${menuItems.length} menu item(s) across ${Object.keys(menuByHawker).length} hawker(s)</div>`;
-                    
-                    Object.entries(menuByHawker).forEach(([hawkerName, data]) => {
+                        if (!acc[hawkerName]) {
+                            acc[hawkerName] = {};
+                        }
+
+                        if (!acc[hawkerName][stallName]) {
+                            acc[hawkerName][stallName] = [];
+                        }
+
+                        acc[hawkerName][stallName].push(item);
+                        return acc;
+                    }, {});
+
+                    const totalHawkers = Object.keys(menuByHawker).length;
+                    let menuHTML = `<div class="success">✅ Found ${menuItems.length} menu item(s) across ${totalHawkers} hawker(s)</div>`;
+
+                    Object.entries(menuByHawker).forEach(([hawkerName, stallsMap]) => {
+                        const stallEntries = Object.entries(stallsMap);
+                        const totalItems = stallEntries.reduce((sum, [, items]) => sum + items.length, 0);
+
                         menuHTML += `
                             <div style="border: 2px solid #F57C00; border-radius: 8px; padding: 1rem; margin: 1rem 0; background: #fff9f5;">
-                                <h3 style="margin: 0 0 0.5rem 0; color: #F57C00;">🏪 ${data.stall}</h3>
-                                <p style="margin: 0.25rem 0; color: #7F8C8D;">Hawker: ${hawkerName}</p>
-                                <p style="margin: 0.5rem 0;"><strong>${data.items.length} menu item(s)</strong></p>
-                                
-                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                <h3 style="margin: 0 0 0.5rem 0; color: #F57C00;">👤 ${hawkerName}</h3>
+                                <p style="margin: 0.25rem 0; color: #7F8C8D;">${stallEntries.length} stall(s) • ${totalItems} menu item(s)</p>
                         `;
-                        
-                        data.items.forEach(item => {
+
+                        stallEntries.forEach(([stallName, items]) => {
                             menuHTML += `
-                                <div class="menu-item-card">
-                                    ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 100%; max-width: 200px; height: auto;"><br>` : ''}
-                                    <h4>${item.name}</h4>
-                                    <p style="margin: 0.5rem 0; color: #7F8C8D; font-size: 0.9rem;">${item.description || 'No description'}</p>
-                                    <p style="margin: 0.5rem 0;">
-                                        <span class="price">RM ${parseFloat(item.price).toFixed(2)}</span>
-                                    </p>
-                                    <p style="margin: 0.5rem 0;">
-                                        Category: <strong>${item.category}</strong> | 
-                                        <span class="status ${item.available ? 'available' : 'unavailable'}">${item.available ? 'Available' : 'Unavailable'}</span>
-                                    </p>
-                                    ${item.preparation_time ? `<p style="margin: 0.25rem 0; font-size: 0.85rem;">⏱️ Prep time: ${item.preparation_time} mins</p>` : ''}
+                                <div style="margin-top: 1rem;">
+                                    <h4 style="margin: 0 0 0.5rem 0; color: #F57C00;">🏪 ${stallName}</h4>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">
+                            `;
+
+                            items.forEach(item => {
+                                menuHTML += `
+                                    <div class="menu-item-card">
+                                        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 100%; max-width: 200px; height: auto;"><br>` : ''}
+                                        <h4>${item.name}</h4>
+                                        <p style="margin: 0.5rem 0; color: #7F8C8D; font-size: 0.9rem;">${item.description || 'No description'}</p>
+                                        <p style="margin: 0.5rem 0;">
+                                            <span class="price">RM ${formatPrice(item.price)}</span>
+                                        </p>
+                                        <p style="margin: 0.5rem 0;">
+                                            Category: <strong>${item.category || 'Uncategorized'}</strong> |
+                                            <span class="status ${item.available ? 'available' : 'unavailable'}">${item.available ? 'Available' : 'Unavailable'}</span>
+                                        </p>
+                                        ${isDefined(item.preparation_time) ? `<p style="margin: 0.25rem 0; font-size: 0.85rem;">⏱️ Prep time: ${item.preparation_time} mins</p>` : ''}
+                                    </div>
+                                `;
+                            });
+
+                            menuHTML += `
+                                    </div>
                                 </div>
                             `;
                         });
-                        
+
                         menuHTML += `
-                                </div>
                             </div>
                         `;
                     });
@@ -399,7 +544,7 @@
                     `;
                     
                     menuItems.forEach(item => {
-                        const createdDate = new Date(item.created_at).toLocaleDateString();
+                        const createdDate = formatDate(item.created_at);
                         const stallName = item.hawker_stalls?.stall_name || 'N/A';
                         const hawkerName = item.hawker_stalls?.users?.full_name || 'N/A';
                         
@@ -408,8 +553,8 @@
                                 <td><strong>${item.name}</strong></td>
                                 <td class="stall-name">${stallName}</td>
                                 <td>${hawkerName}</td>
-                                <td>${item.category}</td>
-                                <td class="price">RM ${parseFloat(item.price).toFixed(2)}</td>
+                                <td>${item.category || 'Uncategorized'}</td>
+                                <td class="price">RM ${formatPrice(item.price)}</td>
                                 <td><span class="status ${item.available ? 'available' : 'unavailable'}">${item.available ? 'Available' : 'Unavailable'}</span></td>
                                 <td>${createdDate}</td>
                             </tr>
@@ -427,11 +572,7 @@
 
             } catch (error) {
                 console.error('Error loading data:', error);
-                const errorMsg = `<div class="error">Error: ${error.message}</div>`;
-                document.getElementById('summary').innerHTML = errorMsg;
-                document.getElementById('hawkersStalls').innerHTML = errorMsg;
-                document.getElementById('menuItems').innerHTML = errorMsg;
-                document.getElementById('allMenuItems').innerHTML = errorMsg;
+                showErrorInAllSections(`Error: ${error.message}`);
             }
         }
 

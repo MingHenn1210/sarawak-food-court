@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <!-- QR Code Manager -->
     <script src="../js/qr-code-manager.js"></script>
 </head>
@@ -327,11 +328,19 @@
         
         // Initialize Supabase
         function initializeSupabase() {
+            if (supabase) {
+                return true;
+            }
+
             try {
-                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const client = getSupabaseClient();
+                if (!client) {
+                    console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                    alert('Failed to connect to database. Please refresh the page.');
+                    return false;
+                }
+
+                supabase = client;
                 qrCodeManager = new QRCodeManager(supabase); // Initialize QR Code Manager
                 console.log('✅ Supabase connected successfully!');
                 console.log('✅ QR Code Manager initialized!');
@@ -1390,7 +1399,6 @@
         console.log('✅ Script loaded completely at:', new Date().toISOString());
     </script>
     
-    <!-- Supabase Integration - REMOVED TO AVOID CONFLICTS -->
-    <!-- <script src="../js/supabase-food-courts.js"></script> -->
+    <!-- Supabase Integration bundled inline; helper removed to avoid drift. -->
 </body>
 </html>

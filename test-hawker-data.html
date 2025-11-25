@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Hawker Data</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -97,10 +98,14 @@
 
         // Initialize Supabase
         async function initSupabase() {
-            const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA1NjQwNTgsImV4cCI6MjA0NjE0MDA1OH0.HKrRlJqOq7OE3k0x8Dw7OC7C0HMvTnW7l3UfvzwTONY';
-            
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabase = getSupabaseClient();
+
+            if (!supabase) {
+                console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                alert('Supabase client failed to initialize. Please refresh the page.');
+                return;
+            }
+
             console.log('✅ Supabase initialized');
         }
 
@@ -108,6 +113,11 @@
             const output = document.getElementById('hawkersList');
             output.innerHTML = 'Loading...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('users')
@@ -130,6 +140,11 @@
             const output = document.getElementById('loginResult');
             output.innerHTML = 'Testing login...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 // Step 1: Check user
                 console.log('🔐 Testing login with:', { phone, password });
@@ -177,6 +192,11 @@
             const output = document.getElementById('loginResult');
             output.innerHTML = 'Running detailed test...\n\n';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             let result = '';
             
             try {
@@ -254,6 +274,11 @@
             const output = document.getElementById('checkResult');
             output.innerHTML = 'Checking...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 // Get user
                 const { data: user, error: userError } = await supabase
@@ -285,6 +310,11 @@
             const output = document.getElementById('stallsList');
             output.innerHTML = 'Loading...';
             
+            if (!supabase) {
+                output.innerHTML = '<span class="error">❌ Supabase client not initialized. Please refresh the page.</span>';
+                return;
+            }
+
             try {
                 const { data, error } = await supabase
                     .from('hawker_stalls')

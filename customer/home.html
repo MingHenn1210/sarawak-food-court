@@ -19,7 +19,7 @@
                 <i class="fas fa-chair"></i>
                 <span>Table <strong id="tableNumber">-</strong></span>
             </div>
-            <h1>Food Stalls</h1>
+            <h1 id="foodCourtTitle">Food Stalls</h1>
             <a href="cart.html" class="cart-icon">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-badge" id="cartCount">0</span>
@@ -82,16 +82,24 @@
     <script src="../js/customer.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-client.js"></script>
     <script>
         let supabase;
         
         // Initialize Supabase
         function initializeSupabase() {
+            if (supabase) {
+                return true;
+            }
+
             try {
-                const SUPABASE_URL = 'https://mtmkghuhhrerlcubhzot.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bWtnaHVoaHJlcmxjdWJoem90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE1Mzc5NzIsImV4cCI6MjA3NzExMzk3Mn0.kA-NUWidhSRNPotmVe3KIclk8LpizR26DzxIBn5C1rA';
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                const client = getSupabaseClient();
+                if (!client) {
+                    console.error('❌ Supabase client unavailable: CDN not loaded or configuration missing');
+                    return false;
+                }
+
+                supabase = client;
                 console.log('✅ Supabase connected!');
                 return true;
             } catch (error) {
@@ -117,6 +125,8 @@
             }
             
             document.getElementById('tableNumber').textContent = table;
+
+            await updateFoodCourtHeader(foodCourtId);
             
             // Update cart count
             updateCartCount();
@@ -299,6 +309,40 @@
             
             if (count > 0) {
                 document.querySelector('.cart-icon').classList.add('has-items');
+            }
+        }
+        async function updateFoodCourtHeader(foodCourtId) {
+            const titleEl = document.getElementById('foodCourtTitle');
+            if (!titleEl) {
+                return;
+            }
+
+            const defaultTitle = 'Food Stalls';
+
+            if (!foodCourtId || !supabase) {
+                titleEl.textContent = defaultTitle;
+                document.title = `${defaultTitle} - Sarawak Food Court`;
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('food_courts')
+                    .select('name')
+                    .eq('id', foodCourtId)
+                    .single();
+
+                if (error) {
+                    throw error;
+                }
+
+                const resolvedName = data?.name?.trim() || defaultTitle;
+                titleEl.textContent = resolvedName;
+                document.title = `${resolvedName} - Sarawak Food Court`;
+            } catch (err) {
+                console.error('Error loading food court name:', err);
+                titleEl.textContent = defaultTitle;
+                document.title = `${defaultTitle} - Sarawak Food Court`;
             }
         }
     </script>

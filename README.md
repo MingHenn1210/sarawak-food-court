@@ -67,7 +67,7 @@ Sarawak_Hub_Centrel/
 │   ├── customer.js           # Customer functionality
 │   ├── hawker.js             # Hawker functionality
 │   ├── cart.js               # Cart management
-│   ├── orders.js             # Order management
+│   ├── orders.js             # Legacy placeholder (Supabase now handles orders)
 │   └── notifications.js      # Real-time notifications
 │
 ├── data/                      # Mock database (JSON for MVP)
