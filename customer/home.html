@@ -342,8 +342,8 @@
             }
             
             grid.innerHTML = stalls.map(stall => `
-                <div class="stall-card" data-category="${stall.category}">
-                    <div class="stall-image" style="background-image: url('${stall.image}')">
+                <div class="stall-card ${!stall.isOpen ? 'closed-stall' : ''}" data-category="${stall.category}">
+                    <div class="stall-image" style="background-image: url('${stall.image}'); position: relative;">
                         ${!stall.isOpen ? '<div class="closed-badge">Closed</div>' : ''}
                         ${stall.rating ? `
                             <div class="rating-badge">
@@ -363,7 +363,7 @@
                             </span>
                         </div>
                         ${!stall.isOpen ? `
-                            <button class="btn-primary disabled" onclick="showClosedMessage('${stall.name}')" style="cursor: not-allowed;">
+                            <button class="btn-primary disabled" onclick="showClosedMessage('${stall.name.replace(/'/g, "\\'")}')">
                                 <i class="fas fa-lock"></i> Stall Closed
                             </button>
                         ` : `
