@@ -252,11 +252,81 @@
                 
                 console.log('📦 Processed order history:', allOrders.length, 'orders');
                 
+                // Auto-delete old orders if more than 50 completed orders exist
+                await autoDeleteOldOrders();
+                
                 updateFilterCounts();
                 displayOrders();
                 
             } catch (error) {
                 console.error('❌ Error in loadOrders:', error);
+            }
+        }
+        
+        async function autoDeleteOldOrders() {
+            try {
+                // Count total completed orders for this stall
+                const { count, error: countError } = await supabase
+                    .from('orders')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('stall_id', hawkerStall.id)
+                    .eq('status', 'completed');
+                
+                if (countError) {
+                    console.error('❌ Error counting orders:', countError);
+                    return;
+                }
+                
+                console.log(`📊 Total completed orders: ${count}`);
+                
+                // If more than 50 orders, delete the oldest ones
+                if (count > 50) {
+                    const ordersToDelete = count - 50;
+                    console.log(`🗑️ Deleting ${ordersToDelete} old orders to keep system smooth...`);
+                    
+                    // Get the oldest completed orders to delete
+                    const { data: oldOrders, error: fetchError } = await supabase
+                        .from('orders')
+                        .select('id, order_id, created_at')
+                        .eq('stall_id', hawkerStall.id)
+                        .eq('status', 'completed')
+                        .order('created_at', { ascending: true })
+                        .limit(ordersToDelete);
+                    
+                    if (fetchError || !oldOrders || oldOrders.length === 0) {
+                        console.error('❌ Error fetching old orders:', fetchError);
+                        return;
+                    }
+                    
+                    // Delete order items first (foreign key constraint)
+                    const orderIds = oldOrders.map(o => o.id);
+                    const { error: deleteItemsError } = await supabase
+                        .from('order_items')
+                        .delete()
+                        .in('order_id', orderIds);
+                    
+                    if (deleteItemsError) {
+                        console.error('❌ Error deleting order items:', deleteItemsError);
+                        return;
+                    }
+                    
+                    // Delete the orders
+                    const { error: deleteOrdersError } = await supabase
+                        .from('orders')
+                        .delete()
+                        .in('id', orderIds);
+                    
+                    if (deleteOrdersError) {
+                        console.error('❌ Error deleting orders:', deleteOrdersError);
+                        return;
+                    }
+                    
+                    console.log(`✅ Successfully deleted ${ordersToDelete} old orders`);
+                    console.log(`📦 Remaining orders: 50 (system optimized)`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error in autoDeleteOldOrders:', error);
             }
         }
         
