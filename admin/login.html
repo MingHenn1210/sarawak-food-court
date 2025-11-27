@@ -56,23 +56,13 @@
             btn.disabled = true;
             
             try {
-                // Load users from mock database
-                const response = await fetch('../data/users.json');
-                const users = await response.json();
-                
-                // Find admin user
-                const user = users.find(u => 
-                    u.type === 'admin' && 
-                    u.username === username && 
-                    u.password === password
-                );
-                
-                if (user) {
+                // Simple admin authentication
+                if (username === 'admin' && password === 'admin123') {
                     // Save session
                     const session = {
-                        userId: user.id,
-                        username: user.username,
-                        name: user.name,
+                        userId: 'admin-1',
+                        username: username,
+                        name: 'Administrator',
                         loginTime: new Date().toISOString()
                     };
                     
