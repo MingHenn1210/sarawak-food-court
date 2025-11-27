@@ -127,9 +127,12 @@
             // Update cart count
             updateCartCount();
             
-            // Load stalls (from Supabase if food court ID is provided, otherwise from JSON)
-            if (foodCourtId && supabase) {
+            // Load stalls (from Supabase if food court ID is provided, otherwise load all)
+            if (foodCourtId && foodCourtId !== 'YOUR_FOODCOURT_ID' && supabase) {
                 await loadStallsFromDatabase(foodCourtId);
+            } else if (supabase) {
+                // Load all stalls if no specific food court
+                await loadAllStallsFromDatabase();
             } else {
                 await loadStalls();
             }
@@ -206,7 +209,67 @@
                 
             } catch (error) {
                 console.error('Error loading stalls from database:', error);
-                // Fallback to JSON if database fails
+                // Fallback to loading all stalls
+                await loadAllStallsFromDatabase();
+            }
+        }
+        
+        // Load all stalls from database (no specific food court filter)
+        async function loadAllStallsFromDatabase() {
+            try {
+                console.log('📍 Loading all stalls from database...');
+                
+                // Fetch ALL hawker stalls from database
+                const { data: stalls, error } = await supabase
+                    .from('hawker_stalls')
+                    .select(`
+                        id,
+                        stall_name,
+                        cuisine_type,
+                        description,
+                        image_url,
+                        status,
+                        is_open,
+                        users:hawker_id (
+                            full_name
+                        )
+                    `)
+                    .eq('status', 'active');
+
+                if (error) throw error;
+
+                // Get menu item counts for each stall
+                const { data: menuCounts, error: menuError } = await supabase
+                    .from('menu_items')
+                    .select('stall_id')
+                    .eq('available', true);
+
+                // Count items per stall
+                const itemCountMap = {};
+                if (menuCounts && !menuError) {
+                    menuCounts.forEach(item => {
+                        itemCountMap[item.stall_id] = (itemCountMap[item.stall_id] || 0) + 1;
+                    });
+                }
+
+                // Transform to match expected format
+                const transformedStalls = stalls.map(stall => ({
+                    id: stall.id,
+                    name: stall.stall_name,
+                    description: stall.description || 'Delicious food awaits!',
+                    category: stall.cuisine_type,
+                    image: stall.image_url || 'https://via.placeholder.com/400x300?text=Food+Stall',
+                    rating: 4.5,
+                    isOpen: stall.is_open !== false,
+                    itemCount: itemCountMap[stall.id] || 0
+                }));
+
+                console.log('✅ Loaded all stalls from database:', transformedStalls);
+                displayStalls(transformedStalls);
+                
+            } catch (error) {
+                console.error('Error loading all stalls from database:', error);
+                // Last resort: try JSON file
                 await loadStalls();
             }
         }
