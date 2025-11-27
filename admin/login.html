@@ -56,8 +56,12 @@
             btn.disabled = true;
             
             try {
+                console.log('Attempting login with username:', username);
+                
                 // Simple admin authentication
                 if (username === 'admin' && password === 'admin123') {
+                    console.log('✅ Credentials valid');
+                    
                     // Save session
                     const session = {
                         userId: 'admin-1',
@@ -67,16 +71,24 @@
                     };
                     
                     localStorage.setItem('adminSession', JSON.stringify(session));
+                    console.log('✅ Session saved');
+                    
+                    // Show success
+                    btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+                    btn.style.background = '#27ae60';
                     
                     // Redirect to dashboard
                     setTimeout(() => {
+                        console.log('Redirecting to dashboard...');
                         window.location.href = 'dashboard.html';
                     }, 500);
                 } else {
+                    console.log('❌ Invalid credentials');
                     throw new Error('Invalid credentials');
                 }
             } catch (error) {
-                alert('Login failed! Please check your credentials.\n\nDemo: admin / admin123');
+                console.error('Login error:', error);
+                alert('Login failed! Please check your credentials.\n\nUsername: admin\nPassword: admin123');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
