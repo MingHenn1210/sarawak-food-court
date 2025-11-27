@@ -431,50 +431,8 @@
         }
         
         function simulateOrderProgress() {
-            if (!currentOrder) {
-                clearInterval(orderUpdateInterval);
-                return;
-            }
-            
-            const statuses = ['pending', 'preparing', 'ready', 'completed'];
-            const currentStatusIndex = statuses.indexOf(currentOrder.status);
-            
-            // Random progress for stalls
-            currentOrder.stallOrders.forEach(stall => {
-                const currentStallStatus = currentOrder.stallStatuses[stall.stallName];
-                const stallStatusIndex = statuses.indexOf(currentStallStatus);
-                
-                // 30% chance to progress
-                if (Math.random() < 0.3 && stallStatusIndex < statuses.length - 1) {
-                    currentOrder.stallStatuses[stall.stallName] = statuses[stallStatusIndex + 1];
-                    showNotification(`${stall.stallName}: ${formatStatus(statuses[stallStatusIndex + 1])}`);
-                }
-            });
-            
-            // Update overall order status based on slowest stall
-            const allStallStatuses = Object.values(currentOrder.stallStatuses);
-            const minStatusIndex = Math.min(...allStallStatuses.map(s => statuses.indexOf(s)));
-            currentOrder.status = statuses[minStatusIndex];
-            
-            // Check if all completed
-            if (allStallStatuses.every(s => s === 'completed')) {
-                currentOrder.status = 'completed';
-                clearInterval(orderUpdateInterval);
-                showNotification('🎉 Your order is ready! Enjoy your meal!');
-            }
-            
-            // Save updated order
-            localStorage.setItem('currentOrder', JSON.stringify(currentOrder));
-            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-            const index = orders.findIndex(o => o.orderId === currentOrder.orderId);
-            if (index !== -1) {
-                orders[index] = currentOrder;
-                localStorage.setItem('orders', JSON.stringify(orders));
-            }
-            
-            // Refresh display
-            updateTimeline(currentOrder.status);
-            displayStallProgress();
+            // Removed: No longer simulating intermediate steps
+            return;
         }
         
         function getStatusIcon(status) {
@@ -489,10 +447,8 @@
         
         function formatStatus(status) {
             const labels = {
-                pending: 'Pending',
-                preparing: 'Preparing',
-                ready: 'Ready',
-                completed: 'Completed'
+                pending: 'Order Placed',
+                completed: 'Order Completed'
             };
             return labels[status] || status;
         }

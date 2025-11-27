@@ -238,7 +238,7 @@ class NotificationManager {
 class ProgressTracker {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        this.steps = ['pending', 'preparing', 'ready', 'completed'];
+        this.steps = ['pending', 'completed'];
         this.currentStep = 'pending';
     }
 
@@ -247,15 +247,11 @@ class ProgressTracker {
 
         const stepLabels = {
             'pending': 'Order Placed',
-            'preparing': 'Preparing',
-            'ready': 'Ready',
-            'completed': 'Completed'
+            'completed': 'Order Completed'
         };
 
         const stepIcons = {
             'pending': '📝',
-            'preparing': '👨‍🍳',
-            'ready': '✅',
             'completed': '🎉'
         };
 
@@ -311,17 +307,9 @@ class ProgressTracker {
                     title: 'Order Confirmed! 🎉',
                     message: 'Your order has been placed successfully'
                 },
-                'preparing': {
-                    title: 'Cooking Started! 👨‍🍳',
-                    message: 'Your food is being prepared with love'
-                },
-                'ready': {
-                    title: 'Order Ready! ✅',
-                    message: 'Your delicious food is ready for pickup!'
-                },
                 'completed': {
-                    title: 'Enjoy Your Meal! 🎉',
-                    message: 'Thank you for your order. Bon appétit!'
+                    title: 'Order Completed! 🎉',
+                    message: 'Thank you for your order. Enjoy your meal!'
                 }
             };
 
@@ -417,8 +405,6 @@ class OrderSubscription {
 function notifyOrderStatusChange(orderId, oldStatus, newStatus) {
     const statusMessages = {
         pending: 'Your order has been received',
-        preparing: 'Your order is being prepared',
-        ready: 'Your order is ready for pickup!',
         completed: 'Order completed. Enjoy your meal!'
     };
 
