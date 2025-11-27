@@ -118,6 +118,12 @@
             
             document.getElementById('tableNumber').textContent = table;
             
+            // Show saved food court name immediately if available
+            const savedFoodCourtName = localStorage.getItem('foodCourtName');
+            if (savedFoodCourtName) {
+                document.getElementById('foodCourtTitle').textContent = savedFoodCourtName;
+            }
+            
             // Update cart count
             updateCartCount();
             
@@ -145,6 +151,7 @@
                 
                 if (!fcError && foodCourt) {
                     document.getElementById('foodCourtTitle').textContent = foodCourt.name;
+                    localStorage.setItem('foodCourtName', foodCourt.name);
                     console.log('✅ Food court name:', foodCourt.name);
                 }
                 

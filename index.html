@@ -36,44 +36,6 @@
                 <button id="stopScanBtn" class="btn-secondary" onclick="stopScan()" style="display: none; margin-top: 1rem;">
                     <i class="fas fa-times"></i> Stop Scanning
                 </button>
-                
-                <!-- Or select table for testing -->
-                <div class="divider">
-                    <span>OR</span>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label for="tableSelect" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-primary);">
-                        <i class="fas fa-table"></i> Select Your Table (Testing):
-                    </label>
-                    <select id="tableSelect" style="width: 100%; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: var(--border-radius); font-size: 1rem; background-color: white;">
-                        <option value="">Choose a table number...</option>
-                        <option value="1">Table 1</option>
-                        <option value="2">Table 2</option>
-                        <option value="3">Table 3</option>
-                        <option value="4">Table 4</option>
-                        <option value="5">Table 5</option>
-                        <option value="6">Table 6</option>
-                        <option value="7">Table 7</option>
-                        <option value="8">Table 8</option>
-                        <option value="9">Table 9</option>
-                        <option value="10">Table 10</option>
-                        <option value="11">Table 11</option>
-                        <option value="12">Table 12</option>
-                        <option value="13">Table 13</option>
-                        <option value="14">Table 14</option>
-                        <option value="15">Table 15</option>
-                        <option value="16">Table 16</option>
-                        <option value="17">Table 17</option>
-                        <option value="18">Table 18</option>
-                        <option value="19">Table 19</option>
-                        <option value="20">Table 20</option>
-                    </select>
-                </div>
-                
-                <button class="btn-secondary btn-large" onclick="enterWithTable()">
-                    <i class="fas fa-arrow-right"></i> Enter with Selected Table
-                </button>
             </div>
             
             <div class="info-cards">
@@ -154,6 +116,11 @@
                     // Store table number if present
                     if (table) {
                         localStorage.setItem('tableNumber', table);
+                    }
+                    
+                    // Store food court ID if present
+                    if (foodcourt) {
+                        localStorage.setItem('foodCourtId', foodcourt);
                     }
                     
                     // Store session start time
@@ -269,56 +236,6 @@
                 });
             }
         }
-        
-        function enterWithTable() {
-            const tableSelect = document.getElementById('tableSelect');
-            const tableNumber = tableSelect.value;
-            
-            if (!tableNumber) {
-                alert('⚠️ Please select a table number first');
-                tableSelect.focus();
-                return;
-            }
-            
-            // Store table info
-            localStorage.setItem('tableNumber', tableNumber);
-            localStorage.setItem('sessionStart', new Date().toISOString());
-            
-            // Visual feedback
-            const btn = event.target.closest('button');
-            btn.innerHTML = '<i class="fas fa-check"></i> Table ' + tableNumber + ' Selected!';
-            btn.style.background = 'var(--success-color)';
-            btn.disabled = true;
-            
-            // Redirect
-            setTimeout(() => {
-                window.location.href = 'customer/home.html';
-            }, 500);
-        }
-        
-        // Auto-submit on Enter key
-        window.addEventListener('DOMContentLoaded', () => {
-            const tableSelect = document.getElementById('tableSelect');
-            
-            if (tableSelect) {
-                tableSelect.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && tableSelect.value) {
-                        enterWithTable();
-                    }
-                });
-                
-                // Highlight button when table selected
-                tableSelect.addEventListener('change', () => {
-                    if (tableSelect.value) {
-                        const btn = document.querySelector('.btn-secondary');
-                        btn.style.animation = 'pulse 0.5s';
-                        setTimeout(() => {
-                            btn.style.animation = '';
-                        }, 500);
-                    }
-                });
-            }
-        });
     </script>
 </body>
 </html>
