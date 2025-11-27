@@ -1343,6 +1343,32 @@ body:has(.menu-categories) {
     background: #FF9800 !important;
 }
 
+/* Disabled button styling for closed stalls */
+.btn-primary.disabled {
+    background: #9E9E9E !important;
+    opacity: 0.7;
+    cursor: not-allowed !important;
+}
+
+.btn-primary.disabled:hover {
+    background: #757575 !important;
+    transform: none;
+}
+
+.stall-card:has(.closed-badge) {
+    opacity: 0.85;
+}
+
+.stall-card:has(.closed-badge) .stall-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 480px) {
     .info-cards {
         grid-template-columns: 1fr;

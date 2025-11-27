@@ -362,11 +362,15 @@
                                 ${stall.itemCount} items
                             </span>
                         </div>
-                        <button class="btn-primary ${!stall.isOpen ? 'disabled' : ''}" 
-                                onclick="viewMenu('${stall.id}')" 
-                                ${!stall.isOpen ? 'disabled' : ''}>
-                            <i class="fas fa-utensils"></i> View Menu
-                        </button>
+                        ${!stall.isOpen ? `
+                            <button class="btn-primary disabled" onclick="showClosedMessage('${stall.name}')" style="cursor: not-allowed;">
+                                <i class="fas fa-lock"></i> Stall Closed
+                            </button>
+                        ` : `
+                            <button class="btn-primary" onclick="viewMenu('${stall.id}')">
+                                <i class="fas fa-utensils"></i> View Menu
+                            </button>
+                        `}
                     </div>
                 </div>
             `).join('');
@@ -413,6 +417,23 @@
             const currentPath = window.location.pathname;
             const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
             window.location.href = `${basePath}/menu.html?stall=${stallId}`;
+        }
+        
+        function showClosedMessage(stallName) {
+            // Show toast notification that stall is closed
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-warning';
+            toast.innerHTML = `
+                <i class="fas fa-lock"></i> 
+                <strong>${stallName}</strong> is currently closed. Please check back later!
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
         
         function updateCartCount() {
