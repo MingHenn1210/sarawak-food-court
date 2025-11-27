@@ -297,28 +297,25 @@
         }
         
         function getNextStatus(currentStatus) {
+            // Simplified 2-step flow: pending -> completed
             const flow = {
-                'pending': 'preparing',
-                'preparing': 'ready',
-                'ready': 'completed'
+                'pending': 'completed'
             };
             return flow[currentStatus] || 'completed';
         }
         
         function getNextStatusLabel(currentStatus) {
+            // Single button label for pending orders
             const labels = {
-                'pending': 'Start Preparing',
-                'preparing': 'Mark Ready',
-                'ready': 'Complete'
+                'pending': 'Complete Order'
             };
             return labels[currentStatus] || 'Update';
         }
         
         function formatStatus(status) {
+            // Simplified status labels (2 steps only)
             const labels = {
-                pending: 'Pending',
-                preparing: 'Preparing',
-                ready: 'Ready',
+                pending: 'Order Placed',
                 completed: 'Completed',
                 cancelled: 'Cancelled'
             };
