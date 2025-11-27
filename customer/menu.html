@@ -227,13 +227,13 @@
                 
                 // Fallback to JSON if database fails
                 console.log('⚠️ Falling back to JSON files');
-                await loadFromJSON(stallId);
+                // JSON fallback removed - using Supabase only
                 
             } catch (error) {
                 console.error('❌ Error loading menu:', error);
                 // Try JSON fallback
                 try {
-                    await loadFromJSON(stallId);
+                    // JSON fallback removed - using Supabase only
                 } catch (fallbackError) {
                     document.getElementById('menuGrid').innerHTML = `
                         <div class="error-message">
