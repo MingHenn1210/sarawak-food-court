@@ -139,12 +139,12 @@
             }
             
             try {
-                // Load orders from database for this stall
+                // Load pending order items for this stall
                 const { data: orderItems, error } = await supabase
                     .from('order_items')
                     .select(`
                         *,
-                        orders:order_id (
+                        orders!inner (
                             id,
                             order_id,
                             table_number,
@@ -153,7 +153,8 @@
                         )
                     `)
                     .eq('stall_id', hawkerStall.id)
-                    .in('orders.status', ['pending']);
+                    .eq('orders.status', 'pending')
+                    .order('orders.created_at', { ascending: false });
                 
                 if (error) {
                     console.error('❌ Error loading orders:', error);
