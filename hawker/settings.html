@@ -154,6 +154,9 @@
             if (initializeSupabase()) {
                 checkAuth();
                 loadSettings();
+                
+                // Add event listener for toggle switch
+                document.getElementById('isOpen').addEventListener('change', toggleStallStatus);
             }
         });
         
@@ -289,6 +292,46 @@
                 // Restore button
                 event.target.innerHTML = '<i class="fas fa-save"></i> Save Changes';
                 event.target.disabled = false;
+            }
+        }
+        
+        async function toggleStallStatus(event) {
+            const isOpen = event.target.checked;
+            
+            if (!hawkerStall) {
+                showToast('Error: Stall information not loaded', 'error');
+                event.target.checked = !isOpen; // Revert toggle
+                return;
+            }
+            
+            try {
+                console.log('🔄 Updating stall status to:', isOpen ? 'OPEN' : 'CLOSED');
+                
+                // Update in Supabase
+                const { data, error } = await supabase
+                    .from('hawker_stalls')
+                    .update({
+                        is_open: isOpen,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', hawkerStall.id)
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                // Update local hawkerStall object
+                hawkerStall.is_open = isOpen;
+                
+                console.log('✅ Stall status updated:', data);
+                showToast(isOpen ? '🟢 Stall is now OPEN' : '🔴 Stall is now CLOSED', 'success');
+                
+            } catch (error) {
+                console.error('❌ Error updating stall status:', error);
+                showToast('Failed to update stall status: ' + error.message, 'error');
+                
+                // Revert toggle on error
+                event.target.checked = !isOpen;
             }
         }
         

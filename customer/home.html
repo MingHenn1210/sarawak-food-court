@@ -158,6 +158,7 @@
                         description,
                         image_url,
                         status,
+                        is_open,
                         users:hawker_id (
                             full_name
                         )
@@ -189,7 +190,7 @@
                     category: stall.cuisine_type,
                     image: stall.image_url || 'https://via.placeholder.com/400x300?text=Food+Stall',
                     rating: 4.5, // Default rating for now
-                    isOpen: stall.status === 'active',
+                    isOpen: stall.is_open !== false, // Use is_open toggle from hawker settings
                     itemCount: itemCountMap[stall.id] || 0 // Get actual count from database
                 }));
 
