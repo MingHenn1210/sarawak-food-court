@@ -109,6 +109,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const table = urlParams.get('table') || localStorage.getItem('tableNumber') || '1';
             const foodCourtId = urlParams.get('foodcourt') || localStorage.getItem('foodCourtId');
+            const stallId = urlParams.get('stall'); // Check if scanning directly to a stall
             
             // Store for later use
             localStorage.setItem('tableNumber', table);
@@ -126,6 +127,26 @@
             
             // Update cart count
             updateCartCount();
+            
+            // If stall ID is provided, redirect to menu directly
+            if (stallId && supabase) {
+                // First, get the stall name to show in title briefly
+                const { data: stallData } = await supabase
+                    .from('hawker_stalls')
+                    .select('stall_name')
+                    .eq('id', stallId)
+                    .single();
+                
+                if (stallData) {
+                    document.getElementById('foodCourtTitle').textContent = stallData.stall_name;
+                }
+                
+                // Redirect to menu after a brief moment
+                setTimeout(() => {
+                    window.location.href = `./menu.html?stall=${stallId}`;
+                }, 500);
+                return;
+            }
             
             // Load stalls (from Supabase if food court ID is provided, otherwise load all)
             if (foodCourtId && foodCourtId !== 'YOUR_FOODCOURT_ID' && supabase) {
