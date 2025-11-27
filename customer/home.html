@@ -19,7 +19,7 @@
                 <i class="fas fa-chair"></i>
                 <span>Table <strong id="tableNumber">-</strong></span>
             </div>
-            <h1>Food Stalls</h1>
+            <h1 id="foodCourtTitle">Food Stalls</h1>
             <a href="cart.html" class="cart-icon">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-badge" id="cartCount">0</span>
@@ -135,6 +135,18 @@
         async function loadStallsFromDatabase(foodCourtId) {
             try {
                 console.log('📍 Loading stalls for food court:', foodCourtId);
+                
+                // Fetch food court name
+                const { data: foodCourt, error: fcError } = await supabase
+                    .from('food_courts')
+                    .select('name')
+                    .eq('id', foodCourtId)
+                    .single();
+                
+                if (!fcError && foodCourt) {
+                    document.getElementById('foodCourtTitle').textContent = foodCourt.name;
+                    console.log('✅ Food court name:', foodCourt.name);
+                }
                 
                 // Fetch hawker stalls from database for this food court
                 const { data: stalls, error } = await supabase
