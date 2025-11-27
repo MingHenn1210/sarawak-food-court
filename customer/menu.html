@@ -171,23 +171,33 @@
                             category: stallData.cuisine_type,
                             description: stallData.description || 'Delicious food awaits!',
                             image: stallData.image_url || 'https://via.placeholder.com/400x300?text=Food+Stall',
-                            rating: 4.5
+                            rating: 4.5,
+                            isOpen: stallData.is_open || false
                         };
                         
                         console.log('✅ Stall loaded from database:', currentStall);
+                        console.log('🏪 Stall status:', currentStall.isOpen ? 'OPEN' : 'CLOSED');
                         
                         // Display stall info
                         document.getElementById('stallName').textContent = currentStall.name;
-                        document.getElementById('stallCategory').textContent = currentStall.category;
+                        document.getElementById('stallCategory').innerHTML = `
+                            ${currentStall.category}
+                            <span class="stall-status ${currentStall.isOpen ? 'open' : 'closed'}">
+                                <i class="fas fa-circle"></i> ${currentStall.isOpen ? 'Open' : 'Closed'}
+                            </span>
+                        `;
                         
                         document.getElementById('stallBanner').innerHTML = `
-                            <div class="banner-image" style="background-image: url('${currentStall.image}')"></div>
+                            <div class="banner-image" style="background-image: url('${currentStall.image}')">
+                                ${!currentStall.isOpen ? '<div class="closed-overlay"><i class="fas fa-lock"></i> Currently Closed</div>' : ''}
+                            </div>
                             <div class="banner-info">
                                 <p>${currentStall.description}</p>
                                 <div class="banner-meta">
                                     <span><i class="fas fa-star"></i> ${currentStall.rating}</span>
                                     <span><i class="fas fa-clock"></i> 15-20 min</span>
                                 </div>
+                                ${!currentStall.isOpen ? '<div class="closed-notice"><i class="fas fa-info-circle"></i> This stall is currently closed. You can browse the menu but cannot place orders.</div>' : ''}
                             </div>
                         `;
                         
@@ -306,10 +316,11 @@
             }
             
             grid.innerHTML = items.map(item => `
-                <div class="menu-item" data-category="${item.category}">
+                <div class="menu-item ${!currentStall.isOpen ? 'stall-closed' : ''}" data-category="${item.category}">
                     <div class="item-image" style="background-image: url('${item.image}')">
                         ${item.isPopular ? '<span class="popular-badge">Popular</span>' : ''}
                         ${!item.available ? '<div class="sold-out-badge">Sold Out</div>' : ''}
+                        ${!currentStall.isOpen ? '<div class="sold-out-badge">Stall Closed</div>' : ''}
                     </div>
                     <div class="item-info">
                         <h3>${item.name}</h3>
@@ -317,8 +328,8 @@
                         <div class="item-footer">
                             <span class="price">RM ${item.price.toFixed(2)}</span>
                             <button class="btn-add" onclick='addDirectlyToCart(${JSON.stringify(item)})' 
-                                    ${!item.available ? 'disabled' : ''}>
-                                <i class="fas fa-plus"></i> Add
+                                    ${!item.available || !currentStall.isOpen ? 'disabled' : ''}>
+                                <i class="fas fa-${!currentStall.isOpen ? 'lock' : 'plus'}"></i> ${!currentStall.isOpen ? 'Closed' : 'Add'}
                             </button>
                         </div>
                     </div>
@@ -346,6 +357,12 @@
         
         // Add directly to cart without modal (quantity = 1, no special instructions)
         function addDirectlyToCart(item) {
+            // Check if stall is open
+            if (!currentStall.isOpen) {
+                showToast('❌ This stall is currently closed', 'error');
+                return;
+            }
+            
             addToCart({
                 ...item,
                 stallName: currentStall.name,
@@ -354,7 +371,7 @@
             });
             
             updateCartDisplay();
-            showToast('Item added to cart!');
+            showToast('✅ Item added to cart!');
         }
         
         function openAddToCartModal(item) {
@@ -394,6 +411,13 @@
         }
         
         function confirmAddToCart() {
+            // Check if stall is open
+            if (!currentStall.isOpen) {
+                closeModal();
+                showToast('❌ This stall is currently closed', 'error');
+                return;
+            }
+            
             const quantity = parseInt(document.getElementById('quantity').value);
             const instructions = document.getElementById('specialInstructions').value;
             
@@ -408,7 +432,7 @@
             updateCartDisplay();
             
             // Show success message
-            showToast('Item added to cart!');
+            showToast('✅ Item added to cart!');
         }
         
         function updateCartDisplay() {
@@ -427,11 +451,16 @@
             }
         }
         
-        function showToast(message) {
+        function showToast(message, type = 'success') {
             // Simple toast notification
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'error' ? 'exclamation-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 
+                        'check-circle';
+            
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             document.body.appendChild(toast);
             
             setTimeout(() => toast.classList.add('show'), 100);

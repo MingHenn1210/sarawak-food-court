@@ -183,29 +183,29 @@
         async function loadOrders() {
             console.log('📋 Loading order history from database...');
             
-            if (!hawkerStall) {
-                console.log('⏳ Waiting for stall info...');
+            if (!session || !session.stallId) {
+                console.log('⏳ Waiting for session...');
                 setTimeout(loadOrders, 500);
                 return;
             }
             
             try {
                 // Load completed orders from database for this stall
-                const { data: orderItems, error } = await supabase
-                    .from('order_items')
+                const { data: orders, error } = await supabase
+                    .from('orders')
                     .select(`
                         *,
-                        orders!inner (
+                        order_items!inner (
                             id,
-                            order_id,
-                            table_number,
-                            status,
-                            created_at
+                            item_name,
+                            quantity,
+                            price,
+                            subtotal
                         )
                     `)
-                    .eq('stall_id', hawkerStall.id)
-                    .eq('orders.status', 'completed')
-                    .order('orders.created_at', { ascending: false });
+                    .eq('order_items.stall_id', session.stallId)
+                    .eq('status', 'completed')
+                    .order('created_at', { ascending: false });
                 
                 if (error) {
                     console.error('❌ Error loading order history:', error);
@@ -219,37 +219,29 @@
                     return;
                 }
                 
-                console.log('✅ Order history loaded:', orderItems);
+                console.log('✅ Order history loaded:', orders);
                 
-                // Group items by order
-                const ordersMap = {};
-                orderItems.forEach(item => {
-                    const order = item.orders;
-                    if (!order) return;
-                    
-                    if (!ordersMap[order.id]) {
-                        ordersMap[order.id] = {
-                            orderId: order.order_id,
-                            tableNumber: order.table_number,
-                            status: order.status,
-                            timestamp: order.created_at,
-                            items: [],
-                            total: 0
-                        };
-                    }
-                    
-                    ordersMap[order.id].items.push({
+                // Process orders
+                allOrders = orders.map(order => {
+                    const items = order.order_items.map(item => ({
                         name: item.item_name,
                         quantity: item.quantity,
                         price: parseFloat(item.price)
-                    });
+                    }));
                     
-                    ordersMap[order.id].total += parseFloat(item.subtotal);
+                    const total = order.order_items.reduce((sum, item) => 
+                        sum + parseFloat(item.subtotal), 0
+                    );
+                    
+                    return {
+                        orderId: order.order_id,
+                        tableNumber: order.table_number,
+                        status: order.status,
+                        timestamp: order.created_at,
+                        items: items,
+                        total: total
+                    };
                 });
-                
-                allOrders = Object.values(ordersMap).sort((a, b) => 
-                    new Date(b.timestamp) - new Date(a.timestamp)
-                );
                 
                 console.log('📦 Processed order history:', allOrders.length, 'orders');
                 
@@ -270,7 +262,7 @@
                 const { data: orderItemsCount, error: countError } = await supabase
                     .from('order_items')
                     .select('order_id', { count: 'exact' })
-                    .eq('stall_id', hawkerStall.id);
+                    .eq('stall_id', session.stallId);
                 
                 if (countError) {
                     console.error('❌ Error counting order items:', countError);
@@ -299,11 +291,16 @@
                     const ordersToDelete = count - 50;
                     console.log(`🗑️ Deleting ${ordersToDelete} old orders to keep system smooth...`);
                     
-                    // Get the oldest completed orders to delete
+                    // Get oldest completed orders with items from this stall
                     const { data: oldOrders, error: fetchError } = await supabase
                         .from('orders')
-                        .select('id, order_id, created_at')
-                        .eq('stall_id', hawkerStall.id)
+                        .select(`
+                            id,
+                            order_id,
+                            created_at,
+                            order_items!inner(stall_id)
+                        `)
+                        .eq('order_items.stall_id', session.stallId)
                         .eq('status', 'completed')
                         .order('created_at', { ascending: true })
                         .limit(ordersToDelete);

@@ -133,28 +133,28 @@
         async function loadOrders() {
             console.log('📋 Loading orders from database...');
             
-            if (!hawkerStall) {
-                console.log('⏳ Waiting for stall info...');
+            if (!session || !session.stallId) {
+                console.log('⏳ Waiting for session...');
                 return;
             }
             
             try {
-                // Load pending order items for this stall
-                const { data: orderItems, error } = await supabase
-                    .from('order_items')
+                // Load pending orders for this stall
+                const { data: orders, error } = await supabase
+                    .from('orders')
                     .select(`
                         *,
-                        orders!inner (
+                        order_items!inner (
                             id,
-                            order_id,
-                            table_number,
-                            status,
-                            created_at
+                            item_name,
+                            quantity,
+                            price,
+                            subtotal
                         )
                     `)
-                    .eq('stall_id', hawkerStall.id)
-                    .eq('orders.status', 'pending')
-                    .order('orders.created_at', { ascending: false });
+                    .eq('order_items.stall_id', session.stallId)
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false });
                 
                 if (error) {
                     console.error('❌ Error loading orders:', error);
@@ -168,32 +168,23 @@
                     return;
                 }
                 
-                console.log('✅ Order items loaded:', orderItems);
+                console.log('✅ Orders loaded:', orders);
                 
-                // Group items by order
-                const ordersMap = {};
-                orderItems.forEach(item => {
-                    const order = item.orders;
-                    if (!order) return;
-                    
-                    if (!ordersMap[order.id]) {
-                        ordersMap[order.id] = {
-                            orderId: order.order_id,
-                            tableNumber: order.table_number,
-                            status: order.status,
-                            timestamp: order.created_at,
-                            items: []
-                        };
-                    }
-                    
-                    ordersMap[order.id].items.push({
-                        name: item.item_name,
-                        quantity: item.quantity,
-                        price: parseFloat(item.price)
-                    });
+                // Process orders
+                allOrders = orders.map(order => {
+                    return {
+                        orderId: order.order_id,
+                        tableNumber: order.table_number,
+                        status: order.status,
+                        timestamp: order.created_at,
+                        items: order.order_items.map(item => ({
+                            name: item.item_name,
+                            quantity: item.quantity,
+                            price: parseFloat(item.price)
+                        }))
+                    };
                 });
                 
-                allOrders = Object.values(ordersMap);
                 console.log('📦 Processed orders:', allOrders);
                 
                 displayOrders();
