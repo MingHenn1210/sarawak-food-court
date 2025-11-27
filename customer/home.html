@@ -308,7 +308,10 @@
         }
         
         function viewMenu(stallId) {
-            window.location.href = `./menu.html?stall=${stallId}`;
+            // Use absolute path to avoid download issues on mobile
+            const currentPath = window.location.pathname;
+            const basePath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+            window.location.href = `${basePath}/menu.html?stall=${stallId}`;
         }
         
         function updateCartCount() {
