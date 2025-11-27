@@ -219,6 +219,23 @@
             try {
                 console.log('📍 Loading all stalls from database...');
                 
+                // Try to get food court name if there's only one
+                const { data: foodCourts, error: fcError } = await supabase
+                    .from('food_courts')
+                    .select('id, name')
+                    .limit(2);
+                
+                if (!fcError && foodCourts && foodCourts.length === 1) {
+                    // Only one food court exists, use its name
+                    document.getElementById('foodCourtTitle').textContent = foodCourts[0].name;
+                    localStorage.setItem('foodCourtName', foodCourts[0].name);
+                    localStorage.setItem('foodCourtId', foodCourts[0].id);
+                    console.log('✅ Using food court:', foodCourts[0].name);
+                } else if (!fcError && foodCourts && foodCourts.length > 1) {
+                    // Multiple food courts, show generic title
+                    document.getElementById('foodCourtTitle').textContent = 'All Food Stalls';
+                }
+                
                 // Fetch ALL hawker stalls from database
                 const { data: stalls, error } = await supabase
                     .from('hawker_stalls')
