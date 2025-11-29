@@ -135,6 +135,19 @@
         async function loadPaymentData() {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             
+            console.log('🛒 Loading payment data...');
+            console.log('📦 Cart items:', cart);
+            console.log('📊 Cart length:', cart.length);
+            
+            if (cart.length === 0) {
+                console.warn('⚠️ Cart is empty!');
+                showToast('Your cart is empty. Please add items first.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 2000);
+                return;
+            }
+            
             // Group by stall
             paymentsByStall = cart.reduce((acc, item) => {
                 const stallName = item.stallName || 'Unknown Stall';
@@ -473,10 +486,11 @@
             }
         }
         
-        function showToast(message) {
+        function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            toast.className = `toast ${type}`;
+            const icon = type === 'error' ? 'exclamation-circle' : 'check-circle';
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             document.body.appendChild(toast);
             
             setTimeout(() => toast.classList.add('show'), 100);
