@@ -399,11 +399,11 @@
                 });
             }
             
-            // Auto-delete order after completion (5 seconds)
-            console.log('⏰ Starting auto-delete timer...');
+            // Auto-delete order after completion (20 minutes)
+            console.log('⏰ Starting auto-delete timer (20 minutes)...');
             setTimeout(async () => {
                 await deleteCompletedOrder();
-            }, 5000); // Wait 5 seconds before deleting
+            }, 20 * 60 * 1000); // Wait 20 minutes before deleting
         }
         
         async function deleteCompletedOrder() {
