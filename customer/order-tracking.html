@@ -153,27 +153,57 @@
             console.log('📋 Loading orders... Order ID:', orderId);
             
             try {
-                // Check if we have multiple active orders
-                const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
-                console.log('📦 Active orders in localStorage:', activeOrders);
-                
-                if (activeOrders.length > 0) {
-                    // Load ALL active orders from multiple hawkers
-                    await loadMultipleOrders(activeOrders);
-                } else if (orderId) {
-                    // Single order from URL
-                    console.log('🔍 Loading single order from URL:', orderId);
-                    await loadOrderFromDatabase(orderId);
-                    displayCurrentOrder();
-                } else {
-                    // Fallback to saved single order
-                    const savedOrderId = localStorage.getItem('currentOrderId');
-                    if (savedOrderId) {
-                        console.log('📦 Found saved order ID:', savedOrderId);
-                        await loadOrderFromDatabase(savedOrderId);
-                        displayCurrentOrder();
+                // If order ID in URL, prioritize loading all active orders (including this one)
+                if (orderId) {
+                    console.log('🔍 Loading order from URL:', orderId);
+                    
+                    // Check for multiple active orders
+                    const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+                    console.log('📦 Active orders in localStorage:', activeOrders);
+                    
+                    if (activeOrders.length > 1) {
+                        // Load all active orders
+                        await loadMultipleOrders(activeOrders);
                     } else {
-                        showEmptyState();
+                        // Load single order
+                        await loadOrderFromDatabase(orderId);
+                        
+                        if (currentOrder) {
+                            if (currentOrder.status === 'completed') {
+                                showCompletionMessage();
+                            } else {
+                                displayCurrentOrder();
+                            }
+                        } else {
+                            showEmptyState();
+                        }
+                    }
+                } else {
+                    // No URL parameter - check localStorage
+                    const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+                    console.log('📦 Active orders in localStorage:', activeOrders);
+                    
+                    if (activeOrders.length > 0) {
+                        await loadMultipleOrders(activeOrders);
+                    } else {
+                        // Fallback to saved single order
+                        const savedOrderId = localStorage.getItem('currentOrderId');
+                        if (savedOrderId) {
+                            console.log('📦 Found saved order ID:', savedOrderId);
+                            await loadOrderFromDatabase(savedOrderId);
+                            
+                            if (currentOrder) {
+                                if (currentOrder.status === 'completed') {
+                                    showCompletionMessage();
+                                } else {
+                                    displayCurrentOrder();
+                                }
+                            } else {
+                                showEmptyState();
+                            }
+                        } else {
+                            showEmptyState();
+                        }
                     }
                 }
                 
