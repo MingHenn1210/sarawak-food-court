@@ -308,6 +308,18 @@
             try {
                 console.log('💾 Saving order to database...');
                 
+                // Get or create guest session
+                let guestSession = localStorage.getItem('guestSession');
+                if (!guestSession) {
+                    // Create unique guest session ID
+                    const tableNumber = localStorage.getItem('tableNumber') || '1';
+                    guestSession = `GUEST_T${tableNumber}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    localStorage.setItem('guestSession', guestSession);
+                    console.log('👤 Created guest session:', guestSession);
+                } else {
+                    console.log('👤 Using existing guest session:', guestSession);
+                }
+                
                 // Get cart and table info
                 const cart = JSON.parse(localStorage.getItem('cart') || '[]');
                 const table = localStorage.getItem('tableNumber') || '1';
@@ -335,6 +347,7 @@
                         order_id: orderId,
                         table_number: table,
                         user_id: userId,
+                        guest_session: guestSession,
                         subtotal: subtotal,
                         service_charge: serviceCharge,
                         total: total,

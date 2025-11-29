@@ -103,6 +103,15 @@
 
             // Stop scanning
             stopScan();
+            
+            // Create guest session on first scan
+            let guestSession = localStorage.getItem('guestSession');
+            if (!guestSession) {
+                const tableNumber = extractTableNumber(decodedText) || '1';
+                guestSession = `GUEST_T${tableNumber}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                localStorage.setItem('guestSession', guestSession);
+                console.log('👤 Guest session created:', guestSession);
+            }
 
             // Check if QR contains a full URL (starts with http:// or https://)
             if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {

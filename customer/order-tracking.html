@@ -354,6 +354,87 @@
                     message: 'Thank you! Have a nice meal! 🍜'
                 });
             }
+            
+            // Auto-delete order after completion (5 seconds)
+            console.log('⏰ Starting auto-delete timer...');
+            setTimeout(async () => {
+                await deleteCompletedOrder();
+            }, 5000); // Wait 5 seconds before deleting
+        }
+        
+        async function deleteCompletedOrder() {
+            if (!currentOrder || !currentOrder.orderId) {
+                console.log('❌ No order to delete');
+                return;
+            }
+            
+            console.log('🗑️ Deleting completed order:', currentOrder.orderId);
+            
+            try {
+                // Get the database order ID first
+                const { data: order, error: fetchError } = await supabase
+                    .from('orders')
+                    .select('id')
+                    .eq('order_id', currentOrder.orderId)
+                    .single();
+                
+                if (fetchError || !order) {
+                    console.error('❌ Error fetching order for deletion:', fetchError);
+                    return;
+                }
+                
+                const dbOrderId = order.id;
+                console.log('📋 Database order ID:', dbOrderId);
+                
+                // Delete order items first (foreign key constraint)
+                const { error: itemsError } = await supabase
+                    .from('order_items')
+                    .delete()
+                    .eq('order_id', dbOrderId);
+                
+                if (itemsError) {
+                    console.error('❌ Error deleting order items:', itemsError);
+                    throw itemsError;
+                }
+                console.log('✅ Order items deleted');
+                
+                // Delete order payments
+                const { error: paymentsError } = await supabase
+                    .from('order_payments')
+                    .delete()
+                    .eq('order_id', dbOrderId);
+                
+                if (paymentsError) {
+                    console.error('❌ Error deleting payments:', paymentsError);
+                    // Don't throw - payments table might not exist
+                }
+                console.log('✅ Order payments deleted');
+                
+                // Delete the order
+                const { error: orderError } = await supabase
+                    .from('orders')
+                    .delete()
+                    .eq('id', dbOrderId);
+                
+                if (orderError) {
+                    console.error('❌ Error deleting order:', orderError);
+                    throw orderError;
+                }
+                
+                console.log('✅ Order deleted successfully from database');
+                
+                // Clear localStorage
+                localStorage.removeItem('currentOrderId');
+                localStorage.removeItem('cart');
+                console.log('🧹 LocalStorage cleared');
+                
+                // Show message to user
+                console.log('🎉 Order cleanup completed!');
+                
+            } catch (error) {
+                console.error('❌ Error during order deletion:', error);
+                // Don't show error to user - silently fail
+            }
         }
         
         function showEmptyState() {
