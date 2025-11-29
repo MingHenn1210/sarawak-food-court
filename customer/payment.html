@@ -344,25 +344,57 @@
                 const guestSession = localStorage.getItem('guestSession');
                 console.log('🔑 Guest Session:', guestSession);
                 
+                // Prepare order data
+                const orderPayload = {
+                    order_id: orderId,
+                    table_number: table,
+                    user_id: userId,
+                    subtotal: subtotal,
+                    service_charge: serviceCharge,
+                    total: total,
+                    status: 'pending'
+                };
+                
+                // Add guest_session if available (for cross-session tracking)
+                if (guestSession) {
+                    orderPayload.guest_session = guestSession;
+                }
+                
                 // 1. Create order in database
-                const { data: orderData, error: orderError } = await supabase
+                let orderData = null;
+                let orderError = null;
+                
+                const result = await supabase
                     .from('orders')
-                    .insert({
-                        order_id: orderId,
-                        table_number: table,
-                        user_id: userId,
-                        guest_session: guestSession,
-                        subtotal: subtotal,
-                        service_charge: serviceCharge,
-                        total: total,
-                        status: 'pending'
-                    })
+                    .insert(orderPayload)
                     .select()
                     .single();
                 
+                orderData = result.data;
+                orderError = result.error;
+                
                 if (orderError) {
                     console.error('❌ Error creating order:', orderError);
-                    throw orderError;
+                    // If error is about missing column, try without guest_session
+                    if (orderError.message && orderError.message.includes('guest_session')) {
+                        console.log('⚠️ guest_session column not found, retrying without it...');
+                        delete orderPayload.guest_session;
+                        
+                        const retryResult = await supabase
+                            .from('orders')
+                            .insert(orderPayload)
+                            .select()
+                            .single();
+                        
+                        if (retryResult.error) {
+                            console.error('❌ Retry failed:', retryResult.error);
+                            throw retryResult.error;
+                        }
+                        
+                        orderData = retryResult.data;
+                    } else {
+                        throw orderError;
+                    }
                 }
                 
                 console.log('✅ Order created in database:', orderData.id);
