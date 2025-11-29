@@ -71,6 +71,12 @@
                 <h2>Order Completed!</h2>
                 <p>Thank you for your order!</p>
                 <p class="completion-subtitle">Have a nice meal! 🍜</p>
+                
+                <!-- Order Receipt -->
+                <div class="order-receipt" id="completionReceipt">
+                    <!-- Will be populated with order details -->
+                </div>
+                
                 <a href="home.html" class="btn-primary btn-large">
                     <i class="fas fa-home"></i> Back to Home
                 </a>
@@ -391,6 +397,9 @@
             // Show completion message
             document.getElementById('completionMessage').style.display = 'block';
             
+            // Display order receipt
+            displayCompletionReceipt();
+            
             // Show notification
             if (window.notificationManager) {
                 window.notificationManager.show({
@@ -480,6 +489,49 @@
                 console.error('❌ Error during order deletion:', error);
                 // Don't show error to user - silently fail
             }
+        }
+        
+        function displayCompletionReceipt() {
+            if (!currentOrder) return;
+            
+            const receiptContainer = document.getElementById('completionReceipt');
+            
+            receiptContainer.innerHTML = `
+                <div class="receipt-header">
+                    <h3>Order #${currentOrder.orderId}</h3>
+                    <p>Table ${currentOrder.tableNumber}</p>
+                    <p>${formatTime(currentOrder.timestamp)}</p>
+                </div>
+                
+                <div class="receipt-items">
+                    ${currentOrder.stallOrders.map(stall => `
+                        <div class="receipt-stall">
+                            <h4><i class="fas fa-store"></i> ${stall.stallName}</h4>
+                            ${stall.items.map(item => `
+                                <div class="receipt-item">
+                                    <span>${item.name} × ${item.quantity}</span>
+                                    <span>RM ${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="receipt-summary">
+                    <div class="receipt-row">
+                        <span>Subtotal</span>
+                        <span>RM ${currentOrder.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span>Service Charge (6%)</span>
+                        <span>RM ${currentOrder.serviceCharge.toFixed(2)}</span>
+                    </div>
+                    <div class="receipt-row receipt-total">
+                        <strong>Total</strong>
+                        <strong>RM ${currentOrder.total.toFixed(2)}</strong>
+                    </div>
+                </div>
+            `;
         }
         
         function showEmptyState() {

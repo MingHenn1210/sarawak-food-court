@@ -1314,6 +1314,82 @@ body:has(.menu-categories) {
     transform: scale(1.05);
 }
 
+/* Order Receipt in Completion */
+.order-receipt {
+    background: white;
+    color: var(--text-primary);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 2rem 0 1.5rem;
+    text-align: left;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.receipt-header {
+    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 2px dashed var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.receipt-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary-color);
+    font-size: 1.3rem;
+}
+
+.receipt-header p {
+    margin: 0.25rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.receipt-items {
+    margin-bottom: 1rem;
+}
+
+.receipt-stall {
+    margin-bottom: 1.5rem;
+}
+
+.receipt-stall h4 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.receipt-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.receipt-summary {
+    border-top: 2px dashed var(--border-color);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+}
+
+.receipt-total {
+    border-top: 2px solid var(--border-color);
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
 @keyframes bounce {
     0%, 100% {
         transform: translateY(0);
