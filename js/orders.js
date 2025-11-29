@@ -107,9 +107,7 @@ function getTodaysOrders() {
 function getStatusColor(status) {
     const colors = {
         pending: '#F57C00',
-        preparing: '#1976D2',
-        ready: '#388E3C',
-        completed: '#7B1FA2'
+        completed: '#388E3C'
     };
     return colors[status] || '#757575';
 }
@@ -118,8 +116,6 @@ function getStatusColor(status) {
 function formatOrderStatus(status) {
     const labels = {
         pending: 'Pending',
-        preparing: 'Preparing',
-        ready: 'Ready for Pickup',
         completed: 'Completed'
     };
     return labels[status] || status;

@@ -183,6 +183,12 @@
         }
         
         async function loadOrderByGuestSession() {
+            // Guest session tracking disabled - column not in database yet
+            // To enable: Add 'guest_session' column to orders table in Supabase
+            console.log('ℹ️ Guest session tracking disabled (database column not available)');
+            return;
+            
+            /* Commented out until guest_session column is added to database
             const guestSession = localStorage.getItem('guestSession');
             
             if (!guestSession) {
@@ -219,6 +225,7 @@
             } catch (error) {
                 console.error('❌ Error in loadOrderByGuestSession:', error);
             }
+            */
         }
         
         async function loadOrderFromDatabase(orderId) {
@@ -302,12 +309,8 @@
             document.getElementById('orderTime').textContent = formatTime(currentOrder.timestamp);
             document.getElementById('orderTotal').textContent = `RM ${currentOrder.total.toFixed(2)}`;
             
-            // Initialize progress tracker
-            if (!progressTracker) {
-                progressTracker = new ProgressTracker('progressTracker');
-            }
-            progressTracker.currentStep = currentOrder.status;
-            progressTracker.render();
+            // Display simple 2-step progress (pending → completed)
+            displayProgressSteps();
             
             // Setup real-time subscription
             setupRealtimeUpdates();
@@ -346,15 +349,13 @@
                         return;
                     }
                     
-                    // Update progress tracker
-                    if (progressTracker) {
-                        progressTracker.updateStatus(newStatus);
-                    }
+                    // Update progress display
+                    displayProgressSteps();
                     
-                    // Play celebration sound for ready
-                    if (newStatus === 'ready') {
+                    // Play celebration sound/vibration for completion
+                    if (newStatus === 'completed') {
                         if ('vibrate' in navigator) {
-                            navigator.vibrate([200, 100, 200, 100, 200]);
+                            navigator.vibrate([200, 100, 200]);
                         }
                     }
                 }
@@ -560,11 +561,38 @@
             return;
         }
         
+        function displayProgressSteps() {
+            const container = document.getElementById('progressTracker');
+            const currentStatus = currentOrder.status;
+            
+            const steps = [
+                { status: 'pending', label: 'Order Placed', icon: 'clock' },
+                { status: 'completed', label: 'Order Completed', icon: 'check-circle' }
+            ];
+            
+            const currentIndex = steps.findIndex(s => s.status === currentStatus);
+            
+            container.innerHTML = `
+                <div class="progress-steps">
+                    ${steps.map((step, index) => {
+                        const isActive = index <= currentIndex;
+                        const isCurrent = step.status === currentStatus;
+                        return `
+                            <div class="progress-step ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}">
+                                <div class="step-icon">
+                                    <i class="fas fa-${step.icon}"></i>
+                                </div>
+                                <div class="step-label">${step.label}</div>
+                            </div>
+                        `;
+                    }).join('<div class="progress-line"></div>')}
+                </div>
+            `;
+        }
+        
         function getStatusIcon(status) {
             const icons = {
                 pending: '<i class="fas fa-clock"></i>',
-                preparing: '<i class="fas fa-fire"></i>',
-                ready: '<i class="fas fa-bell"></i>',
                 completed: '<i class="fas fa-check-circle"></i>'
             };
             return icons[status] || '';

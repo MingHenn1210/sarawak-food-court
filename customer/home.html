@@ -421,6 +421,12 @@
         }
         
         async function checkPendingOrders() {
+            // Guest session tracking disabled - database column not available yet
+            // TODO: Enable this feature after adding guest_session column to orders table
+            console.log('ℹ️ Guest session tracking disabled - database schema needs guest_session column');
+            return;
+            
+            /* Original code commented out until database column is added:
             const guestSession = localStorage.getItem('guestSession');
             
             if (!guestSession || !supabase) {
@@ -473,6 +479,7 @@
             } catch (error) {
                 console.error('❌ Error in checkPendingOrders:', error);
             }
+            */
         }
         
         function showClosedMessage(stallName) {
