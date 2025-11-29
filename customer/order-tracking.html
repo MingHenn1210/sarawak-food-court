@@ -325,15 +325,6 @@
             localStorage.setItem('activeOrders', JSON.stringify(updated));
             console.log('🗑️ Removed completed orders:', orderIds);
         }
-                    console.log('❌ No active order');
-                    showEmptyState();
-                }
-                
-            } catch (error) {
-                console.error('Error loading orders:', error);
-                showEmptyState();
-            }
-        }
         
         async function loadOrderByGuestSession() {
             // Using localStorage for order tracking instead
