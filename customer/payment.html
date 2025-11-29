@@ -405,10 +405,16 @@
                 
                 console.log('✅ Payment records created:', paymentRecords.length);
                 
-                // Save order ID to localStorage for tracking page
-                localStorage.setItem('currentOrderId', orderId);
+                // Save order ID to localStorage for tracking (support multiple orders)
+                const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+                if (!activeOrders.includes(orderId)) {
+                    activeOrders.push(orderId);
+                    localStorage.setItem('activeOrders', JSON.stringify(activeOrders));
+                }
+                localStorage.setItem('currentOrderId', orderId); // Also keep current for single order view
                 
                 console.log('💾 Order saved successfully to database!');
+                console.log('📋 Active orders:', activeOrders);
                 
                 // Show success notification
                 if (window.notificationManager) {

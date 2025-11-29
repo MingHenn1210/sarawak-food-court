@@ -29,6 +29,14 @@
     </header>
     
     <main class="main-content">
+        <!-- Multiple Active Orders Container -->
+        <div id="activeOrdersSection" style="display: none;">
+            <h2 style="padding: 1rem; margin: 0;">Active Orders</h2>
+            <div id="activeOrdersList">
+                <!-- Will be populated with multiple orders -->
+            </div>
+        </div>
+        
         <!-- Current Order (if exists) -->
         <div id="currentOrderSection" style="display: none;">
             <div class="order-header">
@@ -145,39 +153,148 @@
             console.log('📋 Loading orders... Order ID:', orderId);
             
             try {
-                // Load current order from database (works for guests too!)
-                if (orderId) {
-                    console.log('🔍 Loading order from database:', orderId);
+                // Check if we have multiple active orders
+                const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+                console.log('📦 Active orders in localStorage:', activeOrders);
+                
+                if (activeOrders.length > 0) {
+                    // Load ALL active orders from multiple hawkers
+                    await loadMultipleOrders(activeOrders);
+                } else if (orderId) {
+                    // Single order from URL
+                    console.log('🔍 Loading single order from URL:', orderId);
                     await loadOrderFromDatabase(orderId);
+                    displayCurrentOrder();
                 } else {
-                    console.log('⚠️ No order ID in URL');
-                    
-                    // Try to get from localStorage as fallback
+                    // Fallback to saved single order
                     const savedOrderId = localStorage.getItem('currentOrderId');
                     if (savedOrderId) {
                         console.log('📦 Found saved order ID:', savedOrderId);
                         await loadOrderFromDatabase(savedOrderId);
+                        displayCurrentOrder();
                     } else {
-                        // Check for pending orders by guest session
-                        console.log('🔍 Checking for pending orders by guest session...');
-                        await loadOrderByGuestSession();
+                        showEmptyState();
                     }
                 }
                 
-                if (currentOrder) {
-                    console.log('✅ Order loaded successfully:', currentOrder.orderId);
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                showEmptyState();
+            }
+        }
+        
+        async function loadMultipleOrders(orderIds) {
+            console.log('🔄 Loading multiple orders:', orderIds);
+            
+            const ordersData = [];
+            const completedOrderIds = [];
+            
+            for (const orderId of orderIds) {
+                try {
+                    const { data: order, error } = await supabase
+                        .from('orders')
+                        .select('*, order_items(*), order_payments(*)')
+                        .eq('order_id', orderId)
+                        .single();
                     
-                    // Check if order is completed
-                    if (currentOrder.status === 'completed') {
-                        showCompletionMessage();
-                        // Clear saved order after showing completion
-                        setTimeout(() => {
-                            localStorage.removeItem('currentOrderId');
-                        }, 5000); // Clear after 5 seconds
-                    } else {
-                        displayCurrentOrder();
+                    if (!error && order) {
+                        ordersData.push(transformDatabaseOrder(order));
+                        
+                        // Track completed orders for cleanup
+                        if (order.status === 'completed') {
+                            completedOrderIds.push(orderId);
+                        }
                     }
-                } else {
+                } catch (err) {
+                    console.error('Error loading order:', orderId, err);
+                }
+            }
+            
+            if (ordersData.length > 0) {
+                displayMultipleOrders(ordersData);
+                
+                // Remove completed orders from active list after delay
+                if (completedOrderIds.length > 0) {
+                    setTimeout(() => {
+                        removeCompletedOrders(completedOrderIds);
+                    }, 20 * 60 * 1000); // 20 minutes
+                }
+            } else {
+                showEmptyState();
+            }
+        }
+        
+        function displayMultipleOrders(orders) {
+            document.getElementById('activeOrdersSection').style.display = 'block';
+            document.getElementById('currentOrderSection').style.display = 'none';
+            document.getElementById('completionMessage').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            
+            const container = document.getElementById('activeOrdersList');
+            
+            container.innerHTML = orders.map(order => {
+                const statusClass = order.status === 'completed' ? 'completed' : 'pending';
+                const statusIcon = order.status === 'completed' ? 'check-circle' : 'clock';
+                const statusText = order.status === 'completed' ? 'Completed' : 'Preparing';
+                
+                return `
+                    <div class=\"order-card ${statusClass}\">
+                        <div class=\"order-card-header\">
+                            <div>
+                                <h3>Order #${order.orderId}</h3>
+                                <p style=\"margin: 0; color: var(--text-secondary); font-size: 0.9rem;\">
+                                    <i class=\"fas fa-chair\"></i> Table ${order.tableNumber} \u2022 
+                                    <i class=\"fas fa-clock\"></i> ${formatTime(order.timestamp)}
+                                </p>
+                            </div>
+                            <span class=\"status-badge status-${statusClass}\">
+                                <i class=\"fas fa-${statusIcon}\"></i> ${statusText}
+                            </span>
+                        </div>
+                        
+                        <div class=\"order-card-items\">
+                            ${order.stallOrders.map(stall => `
+                                <div class=\"stall-section\">
+                                    <h4><i class=\"fas fa-store\"></i> ${stall.stallName}</h4>
+                                    ${stall.items.map(item => `
+                                        <div class=\"item-row\">
+                                            <span>${item.name} \u00d7 ${item.quantity}</span>
+                                            <span>RM ${(item.price * item.quantity).toFixed(2)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class=\"order-card-footer\">
+                            <span class=\"total-label\">Total:</span>
+                            <strong class=\"total-amount\">RM ${order.total.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Setup real-time updates for all orders
+            setupMultipleOrderUpdates(orders);
+        }
+        
+        function setupMultipleOrderUpdates(orders) {
+            orders.forEach(order => {
+                const subscription = new OrderSubscription(order.orderId, supabase);
+                subscription.subscribe((updatedOrder) => {
+                    console.log('🔄 Order updated:', updatedOrder.order_id);
+                    // Reload all orders to refresh display
+                    loadOrders();
+                });
+            });
+        }
+        
+        function removeCompletedOrders(orderIds) {
+            const activeOrders = JSON.parse(localStorage.getItem('activeOrders') || '[]');
+            const updated = activeOrders.filter(id => !orderIds.includes(id));
+            localStorage.setItem('activeOrders', JSON.stringify(updated));
+            console.log('🗑️ Removed completed orders:', orderIds);
+        }
                     console.log('❌ No active order');
                     showEmptyState();
                 }
