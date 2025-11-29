@@ -189,12 +189,6 @@
         }
         
         async function loadOrderByGuestSession() {
-            // Guest session tracking disabled - column not in database yet
-            // To enable: Add 'guest_session' column to orders table in Supabase
-            console.log('ℹ️ Guest session tracking disabled (database column not available)');
-            return;
-            
-            /* Commented out until guest_session column is added to database
             const guestSession = localStorage.getItem('guestSession');
             
             if (!guestSession) {
@@ -231,7 +225,6 @@
             } catch (error) {
                 console.error('❌ Error in loadOrderByGuestSession:', error);
             }
-            */
         }
         
         async function loadOrderFromDatabase(orderId) {

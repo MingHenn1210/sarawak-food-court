@@ -340,6 +340,10 @@
                 const userId = user ? user.id : null;
                 console.log('👤 User:', userId ? 'Logged in' : 'Guest');
                 
+                // Get guest session for order tracking
+                const guestSession = localStorage.getItem('guestSession');
+                console.log('🔑 Guest Session:', guestSession);
+                
                 // 1. Create order in database
                 const { data: orderData, error: orderError } = await supabase
                     .from('orders')
@@ -347,6 +351,7 @@
                         order_id: orderId,
                         table_number: table,
                         user_id: userId,
+                        guest_session: guestSession,
                         subtotal: subtotal,
                         service_charge: serviceCharge,
                         total: total,
