@@ -135,19 +135,6 @@
         async function loadPaymentData() {
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             
-            console.log('🛒 Loading payment data...');
-            console.log('📦 Cart items:', cart);
-            console.log('📊 Cart length:', cart.length);
-            
-            if (cart.length === 0) {
-                console.warn('⚠️ Cart is empty!');
-                showToast('Your cart is empty. Please add items first.', 'error');
-                setTimeout(() => {
-                    window.location.href = 'home.html';
-                }, 2000);
-                return;
-            }
-            
             // Group by stall
             paymentsByStall = cart.reduce((acc, item) => {
                 const stallName = item.stallName || 'Unknown Stall';
@@ -353,61 +340,24 @@
                 const userId = user ? user.id : null;
                 console.log('👤 User:', userId ? 'Logged in' : 'Guest');
                 
-                // Get guest session for order tracking
-                const guestSession = localStorage.getItem('guestSession');
-                console.log('🔑 Guest Session:', guestSession);
-                
-                // Prepare order data
-                const orderPayload = {
-                    order_id: orderId,
-                    table_number: table,
-                    user_id: userId,
-                    subtotal: subtotal,
-                    service_charge: serviceCharge,
-                    total: total,
-                    status: 'pending'
-                };
-                
-                // Add guest_session if available (for cross-session tracking)
-                if (guestSession) {
-                    orderPayload.guest_session = guestSession;
-                }
-                
                 // 1. Create order in database
-                let orderData = null;
-                let orderError = null;
-                
-                const result = await supabase
+                const { data: orderData, error: orderError } = await supabase
                     .from('orders')
-                    .insert(orderPayload)
+                    .insert({
+                        order_id: orderId,
+                        table_number: table,
+                        user_id: userId,
+                        subtotal: subtotal,
+                        service_charge: serviceCharge,
+                        total: total,
+                        status: 'pending'
+                    })
                     .select()
                     .single();
                 
-                orderData = result.data;
-                orderError = result.error;
-                
                 if (orderError) {
                     console.error('❌ Error creating order:', orderError);
-                    // If error is about missing column, try without guest_session
-                    if (orderError.message && orderError.message.includes('guest_session')) {
-                        console.log('⚠️ guest_session column not found, retrying without it...');
-                        delete orderPayload.guest_session;
-                        
-                        const retryResult = await supabase
-                            .from('orders')
-                            .insert(orderPayload)
-                            .select()
-                            .single();
-                        
-                        if (retryResult.error) {
-                            console.error('❌ Retry failed:', retryResult.error);
-                            throw retryResult.error;
-                        }
-                        
-                        orderData = retryResult.data;
-                    } else {
-                        throw orderError;
-                    }
+                    throw orderError;
                 }
                 
                 console.log('✅ Order created in database:', orderData.id);
@@ -486,11 +436,10 @@
             }
         }
         
-        function showToast(message, type = 'success') {
+        function showToast(message) {
             const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            const icon = type === 'error' ? 'exclamation-circle' : 'check-circle';
-            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
             document.body.appendChild(toast);
             
             setTimeout(() => toast.classList.add('show'), 100);

@@ -189,42 +189,9 @@
         }
         
         async function loadOrderByGuestSession() {
-            const guestSession = localStorage.getItem('guestSession');
-            
-            if (!guestSession) {
-                console.log('⚠️ No guest session found');
-                return;
-            }
-            
-            console.log('👤 Loading orders for guest session:', guestSession);
-            
-            try {
-                // Find pending orders for this guest session
-                const { data: orders, error } = await supabase
-                    .from('orders')
-                    .select('*, order_items(*), order_payments(*)')
-                    .eq('guest_session', guestSession)
-                    .neq('status', 'completed')
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-                
-                if (error) {
-                    console.error('❌ Error loading orders by guest session:', error);
-                    return;
-                }
-                
-                if (orders && orders.length > 0) {
-                    console.log('✅ Found pending order for guest:', orders[0].order_id);
-                    currentOrder = transformDatabaseOrder(orders[0]);
-                    
-                    // Save order ID to localStorage for future reference
-                    localStorage.setItem('currentOrderId', currentOrder.orderId);
-                } else {
-                    console.log('ℹ️ No pending orders for this guest session');
-                }
-            } catch (error) {
-                console.error('❌ Error in loadOrderByGuestSession:', error);
-            }
+            // Using localStorage for order tracking instead
+            console.log('ℹ️ Order tracking via localStorage - no cross-session recovery');
+            return;
         }
         
         async function loadOrderFromDatabase(orderId) {

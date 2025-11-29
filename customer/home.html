@@ -421,58 +421,9 @@
         }
         
         async function checkPendingOrders() {
-            const guestSession = localStorage.getItem('guestSession');
-            
-            if (!guestSession || !supabase) {
-                return;
-            }
-            
-            console.log('🔍 Checking for pending orders for guest:', guestSession);
-            
-            try {
-                // Check if there's a pending order for this guest session
-                const { data: orders, error } = await supabase
-                    .from('orders')
-                    .select('order_id, status')
-                    .eq('guest_session', guestSession)
-                    .neq('status', 'completed')
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-                
-                if (error) {
-                    console.error('❌ Error checking pending orders:', error);
-                    return;
-                }
-                
-                if (orders && orders.length > 0) {
-                    console.log('✅ Found pending order:', orders[0].order_id);
-                    
-                    // Show notification
-                    const notification = document.createElement('div');
-                    notification.className = 'pending-order-banner';
-                    notification.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #FFF3CD; border: 2px solid #FF9800; border-radius: 8px; margin: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                            <i class="fas fa-receipt" style="font-size: 2rem; color: #FF9800;"></i>
-                            <div style="flex: 1;">
-                                <h3 style="margin: 0 0 0.25rem 0; color: #E65100;">You have a pending order!</h3>
-                                <p style="margin: 0; color: #F57C00; font-size: 0.9rem;">Order #${orders[0].order_id} - Status: ${orders[0].status}</p>
-                            </div>
-                            <button onclick="window.location.href='order-tracking.html?order=${orders[0].order_id}'" 
-                                    style="padding: 0.75rem 1.5rem; background: #FF9800; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
-                                View Order
-                            </button>
-                        </div>
-                    `;
-                    
-                    // Insert after header
-                    const header = document.querySelector('.header');
-                    if (header && header.nextSibling) {
-                        header.parentNode.insertBefore(notification, header.nextSibling);
-                    }
-                }
-            } catch (error) {
-                console.error('❌ Error in checkPendingOrders:', error);
-            }
+            // Using localStorage for order tracking - no cross-session recovery
+            console.log('ℹ️ Order tracking via localStorage only');
+            return;
         }
         
         function showClosedMessage(stallName) {
